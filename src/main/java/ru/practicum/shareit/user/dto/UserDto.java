@@ -1,28 +1,21 @@
-package ru.practicum.shareit.item.dto;
+package ru.practicum.shareit.user.dto;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import ru.practicum.shareit.shared.dto.group.OnCreate;
 import ru.practicum.shareit.shared.dto.group.OnUpdate;
 
-/**
- * TODO Sprint add-controllers.
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ItemDto {
-    @NotNull(groups = {OnUpdate.class})
+public class UserDto {
     private Long id;
     @NotBlank(groups = {OnCreate.class})
     private String name;
+    @Email(groups = {OnCreate.class, OnUpdate.class})
     @NotBlank(groups = {OnCreate.class})
-    private String description;
-    @NotNull(groups = {OnCreate.class})
-    private Boolean available;
-    private Long owner;
-    private Long request;
+    private String email;
 }
