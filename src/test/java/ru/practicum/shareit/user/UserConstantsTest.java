@@ -10,7 +10,8 @@ public class UserConstantsTest {
     public static final User NEW_USER = new User(null, "New User", "new.user@gmail.com");
     public static final UserDto NEW_USER_DTO = new UserDto(null, NEW_USER.getName(), NEW_USER.getEmail());
 
-    public static final UserDto USER_UPDATE_NAME_DTO = new UserDto(1L, "Updated Name", null);
-    public static final UserDto USER_UPDATE_NAME_NONEXISTING_DTO = new UserDto(999L, "Updated Name", null);
-    public static final UserDto USER_UPDATE_EMAIL_DTO = new UserDto(1L, null, "updated.email@gmail.com");
+    public static final UserDto USER_UPDATE_NAME_DTO = new UserDto(null, "Updated Name", null);
+    public static final UserDto USER_UPDATE_EMAIL_DTO = new UserDto(null, null, "updated.email@gmail.com");
+
+    public static final Long NON_EXISTING_USER_ID = 999L;
 }

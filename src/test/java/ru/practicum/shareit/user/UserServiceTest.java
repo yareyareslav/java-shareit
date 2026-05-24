@@ -90,7 +90,7 @@ class UserServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(UserConstantsTest.VALID_USER_1));
         when(userRepository.update(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        UserDto user = userService.updateUser(UserConstantsTest.USER_UPDATE_NAME_DTO);
+        UserDto user = userService.updateUser(1L, UserConstantsTest.USER_UPDATE_NAME_DTO);
 
         assertEquals("Updated Name", user.getName());
         assertEquals(UserConstantsTest.VALID_USER_1.getEmail(), user.getEmail());
@@ -99,10 +99,11 @@ class UserServiceTest {
     @Test
     @DisplayName("Update non-existing user")
     void updateUser_nonExistingUser_throwNotFoundException() {
-        when(userRepository.findById(UserConstantsTest.USER_UPDATE_NAME_NONEXISTING_DTO.getId())).thenReturn(Optional.empty());
+        when(userRepository.findById(UserConstantsTest.NON_EXISTING_USER_ID)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class,
-                () -> userService.updateUser(UserConstantsTest.USER_UPDATE_NAME_NONEXISTING_DTO));
+                () -> userService.updateUser(UserConstantsTest.NON_EXISTING_USER_ID,
+                        UserConstantsTest.USER_UPDATE_NAME_DTO));
     }
 
     @Test
@@ -113,7 +114,7 @@ class UserServiceTest {
                 .thenReturn(Optional.of(UserConstantsTest.VALID_USER_2));
 
         assertThrows(ConflictException.class,
-                () -> userService.updateUser(UserConstantsTest.USER_UPDATE_EMAIL_DTO));
+                () -> userService.updateUser(1L, UserConstantsTest.USER_UPDATE_EMAIL_DTO));
     }
 
     @Test

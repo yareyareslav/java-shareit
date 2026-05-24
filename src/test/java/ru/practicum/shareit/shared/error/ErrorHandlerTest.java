@@ -13,6 +13,7 @@ import ru.practicum.shareit.user.UserService;
 import ru.practicum.shareit.user.dto.UserDto;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -56,13 +57,13 @@ class ErrorHandlerTest {
     @Test
     @DisplayName("Handle BadRequestException")
     void handleBadRequestException_return400() throws Exception {
-        when(userService.updateUser(any()))
+        when(userService.updateUser(eq(1L), any(UserDto.class)))
                 .thenThrow(new BadRequestException("Некорректный запрос"));
 
-        mockMvc.perform(patch("/users")
+        mockMvc.perform(patch("/users/1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("must not be null"));
+                .andExpect(jsonPath("$.error").value("Некорректный запрос"));
     }
 }

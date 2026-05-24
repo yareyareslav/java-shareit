@@ -16,6 +16,7 @@ import ru.practicum.shareit.user.dto.UserDto;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
@@ -99,12 +100,12 @@ class UserControllerTest {
     }
 
     @Test
-    @DisplayName("PATCH /users updates user")
+    @DisplayName("PATCH /users/{id} updates user")
     void updateUser_returnOk() throws Exception {
-        when(userService.updateUser(any(UserDto.class)))
+        when(userService.updateUser(eq(1L), any(UserDto.class)))
                 .thenReturn(new UserDto(1L, "Updated", "user1@gmail.com"));
 
-        mockMvc.perform(patch("/users")
+        mockMvc.perform(patch("/users/1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(UserConstantsTest.USER_UPDATE_NAME_DTO)))
                 .andExpect(status().isOk())

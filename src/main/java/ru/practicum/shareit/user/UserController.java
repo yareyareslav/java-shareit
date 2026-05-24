@@ -36,9 +36,12 @@ public class UserController {
         return userService.createUser(userDto);
     }
 
-    @PatchMapping
-    public UserDto updateUser(@Validated(OnUpdate.class) @RequestBody UserDto userDto) {
-        return userService.updateUser(userDto);
+    @PatchMapping("/{id}")
+    public UserDto updateUser(
+            @PathVariable Long id,
+            @Validated(OnUpdate.class) @RequestBody UserDto userDto
+    ) {
+        return userService.updateUser(id, userDto);
     }
 
     @DeleteMapping("/{id}")

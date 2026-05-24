@@ -35,8 +35,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserDto updateUser(UserDto userDto) {
-        User user = findUserByIdOrThrow(userDto.getId());
+    public UserDto updateUser(Long id, UserDto userDto) {
+        User user = findUserByIdOrThrow(id);
         if (userDto.getEmail() != null && !userDto.getEmail().isBlank() && !userDto.getEmail().equalsIgnoreCase(user.getEmail())) {
             checkEmailDuplicates(userDto.getEmail());
             user.setEmail(userDto.getEmail());
