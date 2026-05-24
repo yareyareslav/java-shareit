@@ -33,7 +33,7 @@ class UserServiceTest {
     @Test
     @DisplayName("Get all users")
     void getAllUsers_returnAllUserDtos() {
-        when(userRepository.findAll()).thenReturn(List.of(UserConstantsTest.VALID_USER_1));
+        when(userRepository.getAll()).thenReturn(List.of(UserConstantsTest.VALID_USER_1));
 
         List<UserDto> users = userService.getAllUsers();
 
@@ -62,25 +62,26 @@ class UserServiceTest {
     @Test
     @DisplayName("Create user")
     void createUser_newUser_returnUserDto() {
-        when(userRepository.findByEmail(UserConstantsTest.NEW_USER.getEmail())).thenReturn(Optional.empty());
-        when(userRepository.save(UserConstantsTest.NEW_USER)).thenReturn(
-                new User(3L, UserConstantsTest.NEW_USER.getName(), UserConstantsTest.NEW_USER.getEmail())
-        );
+        when(userRepository.findByEmail(UserConstantsTest.NEW_USER_DTO.getEmail())).thenReturn(Optional.empty());
+        when(userRepository.create(any(User.class))).thenAnswer(invocation -> {
+            User user = invocation.getArgument(0);
+            return new User(3L, user.getName(), user.getEmail());
+        });
 
-        UserDto user = userService.createUser(UserConstantsTest.NEW_USER);
+        UserDto user = userService.createUser(UserConstantsTest.NEW_USER_DTO);
 
         assertEquals(3L, user.getId());
-        verify(userRepository).save(UserConstantsTest.NEW_USER);
+        verify(userRepository).create(any(User.class));
     }
 
     @Test
     @DisplayName("Create user with duplicate email")
     void createUser_duplicateEmail_throwConflictException() {
-        when(userRepository.findByEmail(UserConstantsTest.NEW_USER.getEmail()))
+        when(userRepository.findByEmail(UserConstantsTest.NEW_USER_DTO.getEmail()))
                 .thenReturn(Optional.of(UserConstantsTest.VALID_USER_1));
 
-        assertThrows(ConflictException.class, () -> userService.createUser(UserConstantsTest.NEW_USER));
-        verify(userRepository, never()).save(any());
+        assertThrows(ConflictException.class, () -> userService.createUser(UserConstantsTest.NEW_USER_DTO));
+        verify(userRepository, never()).create(any());
     }
 
     @Test
@@ -89,7 +90,7 @@ class UserServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(UserConstantsTest.VALID_USER_1));
         when(userRepository.update(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        UserDto user = userService.updateUser(1L, UserConstantsTest.USER_UPDATE_NAME_DTO);
+        UserDto user = userService.updateUser(UserConstantsTest.USER_UPDATE_NAME_DTO);
 
         assertEquals("Updated Name", user.getName());
         assertEquals(UserConstantsTest.VALID_USER_1.getEmail(), user.getEmail());
@@ -98,10 +99,10 @@ class UserServiceTest {
     @Test
     @DisplayName("Update non-existing user")
     void updateUser_nonExistingUser_throwNotFoundException() {
-        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+        when(userRepository.findById(UserConstantsTest.USER_UPDATE_NAME_NONEXISTING_DTO.getId())).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class,
-                () -> userService.updateUser(99L, UserConstantsTest.USER_UPDATE_NAME_DTO));
+                () -> userService.updateUser(UserConstantsTest.USER_UPDATE_NAME_NONEXISTING_DTO));
     }
 
     @Test
@@ -112,7 +113,7 @@ class UserServiceTest {
                 .thenReturn(Optional.of(UserConstantsTest.VALID_USER_2));
 
         assertThrows(ConflictException.class,
-                () -> userService.updateUser(1L, UserConstantsTest.USER_UPDATE_EMAIL_DTO));
+                () -> userService.updateUser(UserConstantsTest.USER_UPDATE_EMAIL_DTO));
     }
 
     @Test
@@ -122,7 +123,7 @@ class UserServiceTest {
 
         userService.deleteUser(1L);
 
-        verify(userRepository).deleteById(1L);
+        verify(userRepository).delete(1L);
     }
 
     @Test
@@ -131,6 +132,6 @@ class UserServiceTest {
         when(userRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> userService.deleteUser(99L));
-        verify(userRepository, never()).deleteById(anyLong());
+        verify(userRepository, never()).delete(anyLong());
     }
 }

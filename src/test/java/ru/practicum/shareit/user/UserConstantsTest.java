@@ -8,7 +8,9 @@ public class UserConstantsTest {
     public static final User VALID_USER_1 = new User(1L, "Valid User 1", "valid.user.1@gmail.com");
     public static final User VALID_USER_2 = new User(2L, "Valid User 2", "valid.user.2@gmail.com");
     public static final User NEW_USER = new User(null, "New User", "new.user@gmail.com");
+    public static final UserDto NEW_USER_DTO = new UserDto(null, NEW_USER.getName(), NEW_USER.getEmail());
 
-    public static final UserDto USER_UPDATE_NAME_DTO = new UserDto(null, "Updated Name", null);
-    public static final UserDto USER_UPDATE_EMAIL_DTO = new UserDto(null, null, "updated.email@gmail.com");
+    public static final UserDto USER_UPDATE_NAME_DTO = new UserDto(1L, "Updated Name", null);
+    public static final UserDto USER_UPDATE_NAME_NONEXISTING_DTO = new UserDto(999L, "Updated Name", null);
+    public static final UserDto USER_UPDATE_EMAIL_DTO = new UserDto(1L, null, "updated.email@gmail.com");
 }

@@ -13,19 +13,19 @@ public class ItemRepositoryImpl implements ItemRepository {
     private long nextId = 1;
 
     @Override
-    public Optional<Item> getItemById(Long id) {
+    public Optional<Item> findById(Long id) {
         return Optional.ofNullable(items.get(id));
     }
 
     @Override
-    public List<Item> findByOwnerId(Long ownerId) {
+    public List<Item> getByOwnerId(Long ownerId) {
         return items.values().stream()
-                .filter(item -> item.getOwner().getId().equals(ownerId))
+                .filter(item -> item.getOwnerId().equals(ownerId))
                 .toList();
     }
 
     @Override
-    public List<Item> searchAvailableByText(String text) {
+    public List<Item> getAvailableByText(String text) {
         String searchText = text.toLowerCase();
         return items.values().stream()
                 .filter(Item::isAvailable)
@@ -35,16 +35,14 @@ public class ItemRepositoryImpl implements ItemRepository {
     }
 
     @Override
-    public Item createItem(Item item) {
-        if (item.getId() == null) {
-            item.setId(nextId++);
-        }
+    public Item create(Item item) {
+        item.setId(nextId++);
         items.put(item.getId(), item);
         return item;
     }
 
     @Override
-    public Item updateItem(Item item) {
+    public Item update(Item item) {
         items.put(item.getId(), item);
         return item;
     }

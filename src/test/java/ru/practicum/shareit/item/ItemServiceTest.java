@@ -40,7 +40,7 @@ class ItemServiceTest {
     void getItemsByOwner_existingOwner_returnItems() {
         Item item = ItemConstantsTest.createItem(1L, "Дрель", "Описание", true, ItemConstantsTest.OWNER);
         when(userRepository.findById(1L)).thenReturn(Optional.of(ItemConstantsTest.OWNER));
-        when(itemRepository.findByOwnerId(1L)).thenReturn(List.of(item));
+        when(itemRepository.getByOwnerId(1L)).thenReturn(List.of(item));
 
         List<ItemDto> items = itemService.getItemsByOwner(1L);
 
@@ -60,7 +60,7 @@ class ItemServiceTest {
     @DisplayName("Get item by id")
     void getItemById_existingItem_returnItemDto() {
         Item item = ItemConstantsTest.createItem(1L, "Дрель", "Описание", true, ItemConstantsTest.OWNER);
-        when(itemRepository.getItemById(1L)).thenReturn(Optional.of(item));
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
 
         ItemDto dto = itemService.getItemById(1L);
 
@@ -70,7 +70,7 @@ class ItemServiceTest {
     @Test
     @DisplayName("Get non-existing item by id")
     void getItemById_nonExistingItem_throwNotFoundException() {
-        when(itemRepository.getItemById(99L)).thenReturn(Optional.empty());
+        when(itemRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> itemService.getItemById(99L));
     }
@@ -79,7 +79,7 @@ class ItemServiceTest {
     @DisplayName("Create item")
     void createItem_validOwner_returnItemDto() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(ItemConstantsTest.OWNER));
-        when(itemRepository.createItem(any(Item.class))).thenAnswer(invocation -> {
+        when(itemRepository.create(any(Item.class))).thenAnswer(invocation -> {
             Item item = invocation.getArgument(0);
             item.setId(10L);
             return item;
@@ -95,8 +95,8 @@ class ItemServiceTest {
     @DisplayName("Update item by owner")
     void updateItem_ownerUpdatesOwnItem_returnUpdatedItemDto() {
         Item item = ItemConstantsTest.createItem(1L, "Дрель", "Описание", true, ItemConstantsTest.OWNER);
-        when(itemRepository.getItemById(1L)).thenReturn(Optional.of(item));
-        when(itemRepository.updateItem(any(Item.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
+        when(itemRepository.update(any(Item.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         ItemDto dto = itemService.updateItem(1L, 1L, ItemConstantsTest.ITEM_UPDATE_DTO);
 
@@ -110,11 +110,11 @@ class ItemServiceTest {
         Item item = ItemConstantsTest.createItem(
                 1L, "Дрель", "Описание", true, UserConstantsTest.VALID_USER_2
         );
-        when(itemRepository.getItemById(1L)).thenReturn(Optional.of(item));
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
 
         assertThrows(ForbiddenException.class,
                 () -> itemService.updateItem(1L, 1L, ItemConstantsTest.ITEM_UPDATE_DTO));
-        verify(itemRepository, never()).updateItem(any());
+        verify(itemRepository, never()).update(any());
     }
 
     @Test
@@ -129,7 +129,7 @@ class ItemServiceTest {
     @DisplayName("Search items by text")
     void searchItems_matchingText_returnItems() {
         Item item = ItemConstantsTest.createItem(1L, "Дрель", "Описание", true, ItemConstantsTest.OWNER);
-        when(itemRepository.searchAvailableByText(ItemConstantsTest.SEARCH_TEXT)).thenReturn(List.of(item));
+        when(itemRepository.getAvailableByText(ItemConstantsTest.SEARCH_TEXT)).thenReturn(List.of(item));
 
         List<ItemDto> items = itemService.searchItems(ItemConstantsTest.SEARCH_TEXT);
 

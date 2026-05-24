@@ -19,50 +19,45 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public List<ItemDto> getItemsByOwner(Long ownerId) {
-        getUserOrThrow(ownerId);
-        return itemRepository.findByOwnerId(ownerId).stream()
+        getUserByIdOrThrow(ownerId);
+        return itemRepository.getByOwnerId(ownerId).stream()
                 .map(ItemMapper::toItemDto)
                 .toList();
     }
 
     @Override
     public ItemDto getItemById(Long itemId) {
-        Item item = itemRepository.getItemById(itemId)
-                .orElseThrow(() -> new ru.practicum.shareit.shared.error.NotFoundException("Вещь с id=" + itemId + " не найдена"));
+        Item item = getItemByIdOrThrow(itemId);
         return ItemMapper.toItemDto(item);
     }
 
     @Override
     public ItemDto createItem(Long ownerId, ItemDto itemDto) {
-        User owner = getUserOrThrow(ownerId);
-        Item item = new Item(
-                null,
-                itemDto.getName(),
-                itemDto.getDescription(),
-                itemDto.getAvailable(),
-                owner,
+        getUserByIdOrThrow(ownerId);
+        Item item = ItemMapper.toItem(
+                itemDto,
+                ownerId,
                 null
         );
-        return ItemMapper.toItemDto(itemRepository.createItem(item));
+        return ItemMapper.toItemDto(itemRepository.create(item));
     }
 
     @Override
     public ItemDto updateItem(Long ownerId, Long itemId, ItemDto itemDto) {
-        Item item = itemRepository.getItemById(itemId)
-                .orElseThrow(() -> new NotFoundException("Вещь с id=" + itemId + " не найдена"));
-        if (!item.getOwner().getId().equals(ownerId)) {
+        Item item = getItemByIdOrThrow(itemId);
+        if (!item.getOwnerId().equals(ownerId)) {
             throw new ForbiddenException("Редактировать вещь может только её владелец");
         }
-        if (itemDto.getName() != null) {
+        if (itemDto.getName() != null && !itemDto.getName().isBlank()) {
             item.setName(itemDto.getName());
         }
-        if (itemDto.getDescription() != null) {
+        if (itemDto.getDescription() != null && !itemDto.getDescription().isBlank()) {
             item.setDescription(itemDto.getDescription());
         }
         if (itemDto.getAvailable() != null) {
             item.setAvailable(itemDto.getAvailable());
         }
-        return ItemMapper.toItemDto(itemRepository.updateItem(item));
+        return ItemMapper.toItemDto(itemRepository.update(item));
     }
 
     @Override
@@ -70,13 +65,20 @@ public class ItemServiceImpl implements ItemService {
         if (text == null || text.isBlank()) {
             return List.of();
         }
-        return itemRepository.searchAvailableByText(text).stream()
+        return itemRepository.getAvailableByText(text).stream()
                 .map(ItemMapper::toItemDto)
                 .toList();
     }
 
-    private User getUserOrThrow(Long userId) {
-        return userRepository.findById(userId)
+    private User getUserByIdOrThrow(Long userId) {
+        return userRepository
+                .findById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь с id=" + userId + " не найден"));
+    }
+
+    private Item getItemByIdOrThrow(long itemId) {
+        return itemRepository
+                .findById(itemId)
+                .orElseThrow(() -> new NotFoundException("Вещь с id=" + itemId + " не найдена"));
     }
 }

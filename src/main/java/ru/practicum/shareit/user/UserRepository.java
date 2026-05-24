@@ -4,15 +4,15 @@ import java.util.List;
 import java.util.Optional;
 
 public interface UserRepository {
-    List<User> findAll();
+    List<User> getAll();
 
     Optional<User> findById(Long id);
 
     Optional<User> findByEmail(String email);
 
-    User save(User user);
+    User create(User user);
 
     User update(User user);
 
-    void deleteById(Long id);
+    void delete(Long id);
 }

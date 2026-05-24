@@ -8,9 +8,9 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserController;
 import ru.practicum.shareit.user.UserService;
+import ru.practicum.shareit.user.dto.UserDto;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -44,7 +44,7 @@ class ErrorHandlerTest {
     @Test
     @DisplayName("Handle ConflictException")
     void handleConflictException_return409() throws Exception {
-        when(userService.createUser(any(User.class)))
+        when(userService.createUser(any(UserDto.class)))
                 .thenThrow(new ConflictException("Email уже занят"));
 
         mockMvc.perform(post("/users")
@@ -57,13 +57,13 @@ class ErrorHandlerTest {
     @Test
     @DisplayName("Handle BadRequestException")
     void handleBadRequestException_return400() throws Exception {
-        when(userService.updateUser(eq(1L), any()))
+        when(userService.updateUser(any()))
                 .thenThrow(new BadRequestException("Некорректный запрос"));
 
-        mockMvc.perform(patch("/users/1")
+        mockMvc.perform(patch("/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Некорректный запрос"));
+                .andExpect(jsonPath("$.error").value("must not be null"));
     }
 }

@@ -1,10 +1,11 @@
 package ru.practicum.shareit.item;
 
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.shared.dto.group.OnCreate;
 import ru.practicum.shareit.shared.error.BadRequestException;
 
 import java.util.List;
@@ -13,6 +14,7 @@ import java.util.List;
  * TODO Sprint add-controllers.
  */
 @RestController
+@Validated
 @RequiredArgsConstructor
 @RequestMapping("/items")
 public class ItemController {
@@ -24,7 +26,7 @@ public class ItemController {
     @ResponseStatus(HttpStatus.CREATED)
     public ItemDto createItem(
             @RequestHeader(SHARER_USER_ID_HEADER) Long userId,
-            @Valid @RequestBody ItemDto itemDto
+            @Validated(OnCreate.class) @RequestBody ItemDto itemDto
     ) {
         if (userId == null) {
             throw new BadRequestException(SHARER_USER_ID_HEADER + " не должен быть пустым");

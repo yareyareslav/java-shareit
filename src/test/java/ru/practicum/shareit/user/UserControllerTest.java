@@ -77,12 +77,12 @@ class UserControllerTest {
     @Test
     @DisplayName("POST /users creates user")
     void createUser_validBody_returnCreated() throws Exception {
-        when(userService.createUser(any(User.class)))
+        when(userService.createUser(any(UserDto.class)))
                 .thenReturn(new UserDto(1L, "User 1", "user1@gmail.com"));
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(UserConstantsTest.NEW_USER)))
+                        .content(objectMapper.writeValueAsString(UserConstantsTest.NEW_USER_DTO)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.email").value("user1@gmail.com"));
     }
@@ -90,7 +90,7 @@ class UserControllerTest {
     @Test
     @DisplayName("POST /users with invalid email returns 400")
     void createUser_invalidEmail_returnBadRequest() throws Exception {
-        User invalidUser = new User(null, "User", "not-an-email");
+        UserDto invalidUser = new UserDto(null, "User", "not-an-email");
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -100,12 +100,12 @@ class UserControllerTest {
     }
 
     @Test
-    @DisplayName("PATCH /users/{id} updates user")
+    @DisplayName("PATCH /users updates user")
     void updateUser_returnOk() throws Exception {
-        when(userService.updateUser(eq(1L), any(UserDto.class)))
+        when(userService.updateUser(any(UserDto.class)))
                 .thenReturn(new UserDto(1L, "Updated", "user1@gmail.com"));
 
-        mockMvc.perform(patch("/users/1")
+        mockMvc.perform(patch("/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(UserConstantsTest.USER_UPDATE_NAME_DTO)))
                 .andExpect(status().isOk())

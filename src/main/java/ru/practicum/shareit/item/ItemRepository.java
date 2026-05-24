@@ -4,13 +4,13 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ItemRepository {
-    Optional<Item> getItemById(Long id);
+    Optional<Item> findById(Long id);
 
-    List<Item> findByOwnerId(Long ownerId);
+    List<Item> getByOwnerId(Long ownerId);
 
-    List<Item> searchAvailableByText(String text);
+    List<Item> getAvailableByText(String text);
 
-    Item createItem(Item item);
+    Item create(Item item);
 
-    Item updateItem(Item item);
+    Item update(Item item);
 }

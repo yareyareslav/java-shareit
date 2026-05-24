@@ -44,7 +44,7 @@ class ItemControllerTest {
     @DisplayName("POST /items creates item")
     void createItem_validRequest_returnCreated() throws Exception {
         when(itemService.createItem(eq(1L), any(ItemDto.class)))
-                .thenReturn(new ItemDto(1L, "Дрель", "Описание", true, null));
+                .thenReturn(new ItemDto(1L, "Дрель", "Описание", true, null, null));
 
         mockMvc.perform(post("/items")
                         .header(SHARER_USER_ID_HEADER, 1L)
@@ -57,7 +57,7 @@ class ItemControllerTest {
     @Test
     @DisplayName("POST /items without required fields returns 400")
     void createItem_invalidBody_returnBadRequest() throws Exception {
-        ItemDto invalidDto = new ItemDto(null, "", "", null, null);
+        ItemDto invalidDto = new ItemDto(null, "", "", null, null, null);
 
         mockMvc.perform(post("/items")
                         .header(SHARER_USER_ID_HEADER, 1L)
@@ -71,7 +71,7 @@ class ItemControllerTest {
     @DisplayName("PATCH /items/{id} updates item")
     void updateItem_returnOk() throws Exception {
         when(itemService.updateItem(eq(1L), eq(1L), any(ItemDto.class)))
-                .thenReturn(new ItemDto(1L, "Отвёртка", "Описание", false, null));
+                .thenReturn(new ItemDto(1L, "Отвёртка", "Описание", false, null, null));
 
         mockMvc.perform(patch("/items/1")
                         .header(SHARER_USER_ID_HEADER, 1L)
@@ -98,7 +98,7 @@ class ItemControllerTest {
     @Test
     @DisplayName("GET /items/{id} returns item")
     void getItem_returnOk() throws Exception {
-        when(itemService.getItemById(1L)).thenReturn(new ItemDto(1L, "Дрель", "Описание", true, null));
+        when(itemService.getItemById(1L)).thenReturn(new ItemDto(1L, "Дрель", "Описание", true, null, null));
 
         mockMvc.perform(get("/items/1"))
                 .andExpect(status().isOk())
@@ -109,7 +109,7 @@ class ItemControllerTest {
     @DisplayName("GET /items returns owner items")
     void getOwnerItems_returnOk() throws Exception {
         when(itemService.getItemsByOwner(1L))
-                .thenReturn(List.of(new ItemDto(1L, "Дрель", "Описание", true, null)));
+                .thenReturn(List.of(new ItemDto(1L, "Дрель", "Описание", true, null, null)));
 
         mockMvc.perform(get("/items").header(SHARER_USER_ID_HEADER, 1L))
                 .andExpect(status().isOk())
@@ -120,7 +120,7 @@ class ItemControllerTest {
     @DisplayName("GET /items/search returns found items")
     void searchItems_returnOk() throws Exception {
         when(itemService.searchItems("дрел"))
-                .thenReturn(List.of(new ItemDto(1L, "Дрель", "Описание", true, null)));
+                .thenReturn(List.of(new ItemDto(1L, "Дрель", "Описание", true, null, null)));
 
         mockMvc.perform(get("/items/search").param("text", "дрел"))
                 .andExpect(status().isOk())

@@ -10,7 +10,7 @@ public class UserRepositoryImpl implements UserRepository {
     private long nextId = 1;
 
     @Override
-    public List<User> findAll() {
+    public List<User> getAll() {
         return new ArrayList<>(users.values());
     }
 
@@ -27,10 +27,8 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
-    public User save(User user) {
-        if (user.getId() == null) {
-            user.setId(nextId++);
-        }
+    public User create(User user) {
+        user.setId(nextId++);
         users.put(user.getId(), user);
         return user;
     }
@@ -42,7 +40,7 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
-    public void deleteById(Long id) {
+    public void delete(Long id) {
         users.remove(id);
     }
 

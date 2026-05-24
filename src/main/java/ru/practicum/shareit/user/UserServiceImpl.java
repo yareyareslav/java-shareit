@@ -16,38 +16,32 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<UserDto> getAllUsers() {
-        return userRepository.findAll().stream()
+        return userRepository.getAll().stream()
                 .map(UserMapper::toUserDto)
                 .toList();
     }
 
     @Override
     public UserDto getUserById(Long id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Пользователь с id=" + id + " не найден"));
+        User user = findUserByIdOrThrow(id);
         return UserMapper.toUserDto(user);
     }
 
     @Override
-    public UserDto createUser(User user) {
-        userRepository.findByEmail(user.getEmail()).ifPresent(existing -> {
-            throw new ConflictException("Пользователь с email=" + user.getEmail() + " уже существует");
-        });
-        User saved = userRepository.save(user);
+    public UserDto createUser(UserDto userDto) {
+        checkEmailDuplicates(userDto.getEmail());
+        User saved = userRepository.create(UserMapper.toUser(userDto));
         return UserMapper.toUserDto(saved);
     }
 
     @Override
-    public UserDto updateUser(Long id, UserDto userDto) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Пользователь с id=" + id + " не найден"));
-        if (userDto.getEmail() != null && !userDto.getEmail().equalsIgnoreCase(user.getEmail())) {
-            userRepository.findByEmail(userDto.getEmail()).ifPresent(existing -> {
-                throw new ConflictException("Пользователь с email=" + userDto.getEmail() + " уже существует");
-            });
+    public UserDto updateUser(UserDto userDto) {
+        User user = findUserByIdOrThrow(userDto.getId());
+        if (userDto.getEmail() != null && !userDto.getEmail().isBlank() && !userDto.getEmail().equalsIgnoreCase(user.getEmail())) {
+            checkEmailDuplicates(userDto.getEmail());
             user.setEmail(userDto.getEmail());
         }
-        if (userDto.getName() != null) {
+        if (userDto.getName() != null && !userDto.getName().isBlank()) {
             user.setName(userDto.getName());
         }
         return UserMapper.toUserDto(userRepository.update(user));
@@ -55,9 +49,18 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void deleteUser(Long id) {
-        if (userRepository.findById(id).isEmpty()) {
-            throw new NotFoundException("Пользователь с id=" + id + " не найден");
-        }
-        userRepository.deleteById(id);
+        findUserByIdOrThrow(id);
+        userRepository.delete(id);
+    }
+
+    private User findUserByIdOrThrow(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Пользователь с id=" + id + " не найден"));
+    }
+
+    private void checkEmailDuplicates(String email) {
+        userRepository.findByEmail(email).ifPresent(existing -> {
+            throw new ConflictException("Пользователь с email=" + email + " уже существует");
+        });
     }
 }
