@@ -22,7 +22,7 @@ public class CommentMapper {
     public static CommentDto toCommentDto(Comment comment) {
         return new CommentDto(
                 comment.getId(),
-                comment.getAuthor().getName(),
+                comment.getAuthor() != null ? comment.getAuthor().getName() : null,
                 comment.getText()
         );
     }
@@ -30,7 +30,7 @@ public class CommentMapper {
     public static ResponseCommentDto toResponseCommentDto(Comment comment) {
         return new ResponseCommentDto(
                 comment.getId(),
-                comment.getAuthor().getName(),
+                comment.getAuthor() != null ? comment.getAuthor().getName() : null,
                 comment.getText(),
                 comment.getCreated()
         );

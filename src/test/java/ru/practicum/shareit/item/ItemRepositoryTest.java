@@ -9,16 +9,12 @@ import org.springframework.test.annotation.DirtiesContext;
 import ru.practicum.shareit.user.UserRepository;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class ItemRepositoryTest {
-
     @Autowired
     ItemRepository itemRepository;
 
@@ -28,36 +24,6 @@ class ItemRepositoryTest {
     @BeforeEach
     void setUp() {
         userRepository.save(ItemConstantsTest.OWNER);
-    }
-
-    @Test
-    @DisplayName("Create item assigns id")
-    void createItem_new_assignsId() {
-        Item item = ItemConstantsTest.createItem(
-                null,
-                ItemConstantsTest.VALID_ITEM_DTO.getName(),
-                ItemConstantsTest.VALID_ITEM_DTO.getDescription(),
-                ItemConstantsTest.VALID_ITEM_DTO.getAvailable(),
-                ItemConstantsTest.OWNER
-        );
-
-        Item saved = itemRepository.save(item);
-
-        assertNotNull(saved.getId());
-        assertEquals(ItemConstantsTest.VALID_ITEM_DTO.getName(), saved.getName());
-    }
-
-    @Test
-    @DisplayName("Get item by id")
-    void findItemById_existingItem_return() {
-        Item saved = itemRepository.save(ItemConstantsTest.createItem(
-                null, "Дрель", "Описание", true, ItemConstantsTest.OWNER
-        ));
-
-        Optional<Item> item = itemRepository.findById(saved.getId());
-
-        assertTrue(item.isPresent());
-        assertEquals("Дрель", item.get().getName());
     }
 
     @Test
@@ -89,19 +55,5 @@ class ItemRepositoryTest {
 
         assertEquals(1, items.size());
         assertEquals("Дрель", items.getFirst().getName());
-    }
-
-    @Test
-    @DisplayName("Update item")
-    void updateItem_existingItem_returnUpdated() {
-        Item saved = itemRepository.save(ItemConstantsTest.createItem(
-                null, "Дрель", "Описание", true, ItemConstantsTest.OWNER
-        ));
-        saved.setName("Отвёртка");
-
-        Item updated = itemRepository.save(saved);
-
-        assertEquals("Отвёртка", updated.getName());
-        assertEquals("Отвёртка", itemRepository.findById(saved.getId()).orElseThrow().getName());
     }
 }

@@ -1,7 +1,6 @@
 package ru.practicum.shareit.item;
 
 import ru.practicum.shareit.item.dto.ItemDto;
-import ru.practicum.shareit.request.ItemRequest;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserConstantsTest;
 
@@ -26,7 +25,7 @@ public class ItemConstantsTest {
                 description,
                 available,
                 owner,
-                new ItemRequest(1L, "Нужна вещь", owner, LocalDateTime.now()),
+                null,
                 new ArrayList<>()
         );
     }

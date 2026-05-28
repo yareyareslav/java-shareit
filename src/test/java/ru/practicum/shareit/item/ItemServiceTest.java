@@ -6,7 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import ru.practicum.shareit.booking.Booking;
+import ru.practicum.shareit.booking.BookingConstantsTest;
 import ru.practicum.shareit.booking.BookingStatus;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ResponseItemDto;
@@ -15,7 +15,6 @@ import ru.practicum.shareit.shared.error.NotFoundException;
 import ru.practicum.shareit.user.UserConstantsTest;
 import ru.practicum.shareit.user.UserRepository;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -53,6 +51,8 @@ class ItemServiceTest {
         item.setComments(List.of(new Comment(1L, null, item, "Отзыв", null)));
         when(userRepository.findById(1L)).thenReturn(Optional.of(ItemConstantsTest.OWNER));
         when(itemRepository.findAllWithFetchedComments(1L)).thenReturn(List.of(item));
+        when(bookingRepository.findPastApprovedByItemOwnerId(1L)).thenReturn(null);
+        when(bookingRepository.findFutureApprovedByItemOwnerId(1L)).thenReturn(null);
 
         List<ResponseItemDto> items = itemService.getItemsByOwner(1L);
 
@@ -66,30 +66,18 @@ class ItemServiceTest {
     @DisplayName("Get items by owner with last and next bookings")
     void getItemsByOwner_withBookings_returnItemsWithBookingDates() {
         Item item = ItemConstantsTest.createItem(1L, "Дрель", "Описание", true, ItemConstantsTest.OWNER);
-        Booking lastBooking = new Booking(
-                10L,
-                LocalDateTime.now().minusDays(5),
-                LocalDateTime.now().minusDays(3),
-                item,
-                ItemConstantsTest.OWNER,
-                BookingStatus.APPROVED
-        );
-        Booking nextBooking = new Booking(
-                11L,
-                LocalDateTime.now().plusDays(1),
-                LocalDateTime.now().plusDays(3),
-                item,
-                UserConstantsTest.VALID_USER_2,
-                BookingStatus.APPROVED
-        );
         when(userRepository.findById(1L)).thenReturn(Optional.of(ItemConstantsTest.OWNER));
         when(itemRepository.findAllWithFetchedComments(1L)).thenReturn(List.of(item));
+        when(bookingRepository.findPastApprovedByItemOwnerId(1L))
+                .thenReturn(BookingConstantsTest.createLastApprovedBooking(item));
+        when(bookingRepository.findFutureApprovedByItemOwnerId(1L))
+                .thenReturn(BookingConstantsTest.createNextApprovedBooking(item));
 
         List<ResponseItemDto> items = itemService.getItemsByOwner(1L);
 
         assertEquals(1, items.size());
-        assertEquals(10L, items.getFirst().getLastBooking().getId());
-        assertEquals(11L, items.getFirst().getNextBooking().getId());
+        assertEquals(BookingConstantsTest.LAST_BOOKING_ID, items.getFirst().getLastBooking().getId());
+        assertEquals(BookingConstantsTest.NEXT_BOOKING_ID, items.getFirst().getNextBooking().getId());
     }
 
     @Test
