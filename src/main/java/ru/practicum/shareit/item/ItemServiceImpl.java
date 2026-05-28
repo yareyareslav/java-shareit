@@ -1,7 +1,6 @@
 package ru.practicum.shareit.item;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.booking.BookingRepository;
@@ -19,13 +18,10 @@ import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserRepository;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class ItemServiceImpl implements ItemService {
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
@@ -123,14 +119,5 @@ public class ItemServiceImpl implements ItemService {
         return itemRepository
                 .findByIdWithFetchedComments(itemId)
                 .orElseThrow(() -> new NotFoundException("Вещь с id=" + itemId + " не найдена"));
-    }
-
-    private Map<Long, Booking> toFirstBookingPerItem(List<Booking> bookings) {
-        Map<Long, Booking> result = new HashMap<>();
-        for (Booking booking : bookings) {
-            Long itemId = booking.getItem().getId();
-            result.putIfAbsent(itemId, booking);
-        }
-        return result;
     }
 }

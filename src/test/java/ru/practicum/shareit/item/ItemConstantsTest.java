@@ -4,7 +4,6 @@ import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserConstantsTest;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 
 public class ItemConstantsTest {
