@@ -1,6 +1,7 @@
 package ru.practicum.shareit.booking;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.ResponseBookingDto;
@@ -15,6 +16,7 @@ import ru.practicum.shareit.user.UserRepository;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BookingServiceImpl implements BookingService {
@@ -39,7 +41,7 @@ public class BookingServiceImpl implements BookingService {
         };
     }
 
-    private List<Booking> handleStateForBookingsOfUser (Long bookerId, BookingState state) {
+    private List<Booking> handleStateForBookingsOfUser(Long bookerId, BookingState state) {
         return switch (state) {
             case CURRENT ->
                     bookingRepository.findAllByBookerIdAndInCurrentPeriod(bookerId);
@@ -59,20 +61,27 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public List<ResponseBookingDto> getBookings(Long userId, BookingState state) {
         getUserByIdOrThrow(userId);
-        return handleStateForBookingsOfUser(userId, state)
+        List<ResponseBookingDto> bookings = handleStateForBookingsOfUser(userId, state)
                 .stream()
                 .map(BookingMapper::toResponseDto)
                 .toList();
+        log.info("Loaded {} bookings for bookerId={}, state={}", bookings.size(), userId, state);
+        return bookings;
     }
 
     @Override
     public ResponseBookingDto getBookingById(Long bookingId, Long userId) {
         getUserByIdOrThrow(userId);
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new NotFoundException("Бронирование с id=" + bookingId + " не найдено"));
+                .orElseThrow(() -> {
+                    log.warn("Booking not found: id={}", bookingId);
+                    return new NotFoundException("Бронирование с id=" + bookingId + " не найдено");
+                });
         if (!booking.getBooker().getId().equals(userId) && !booking.getItem().getOwner().getId().equals(userId)) {
+            log.warn("Booking access denied: bookingId={}, userId={}", bookingId, userId);
             throw new ForbiddenException("Вы не являетесь создателем запроса или владельцем предмета из запроса.");
         }
+        log.info("Found booking id={} for userId={}", bookingId, userId);
         return BookingMapper.toResponseDto(booking);
     }
 
@@ -82,52 +91,66 @@ public class BookingServiceImpl implements BookingService {
         Item item = getItemByIdOrThrow(bookingDto.getItemId());
 
         if (!item.isAvailable()) {
+            log.warn("Booking denied: item id={} is not available", item.getId());
             throw new BadRequestException("Предмет с id=" + item.getId() + " недоступен для бронирования");
         }
 
         bookingDto.setStatus(BookingStatus.WAITING);
 
         Booking booking = BookingMapper.toData(bookingDto, item, user);
-        return BookingMapper.toResponseDto(bookingRepository.save(booking));
+        Booking saved = bookingRepository.save(booking);
+        log.info("Created booking id={} for itemId={} by bookerId={}",
+                saved.getId(), item.getId(), requestorId);
+        return BookingMapper.toResponseDto(saved);
     }
 
     @Override
     public ResponseBookingDto updateStatus(Long userId, Long bookingId, Boolean approved) {
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new NotFoundException("Бронирование с id=" + bookingId + " не найдено"));
+                .orElseThrow(() -> {
+                    log.warn("Booking not found: id={}", bookingId);
+                    return new NotFoundException("Бронирование с id=" + bookingId + " не найдено");
+                });
         userRepository
                 .findById(userId)
-                .orElseThrow(() -> new ForbiddenException("Пользователь с id=" + userId + " не найден"));
+                .orElseThrow(() -> {
+                    log.warn("User not found on booking status update: userId={}", userId);
+                    return new ForbiddenException("Пользователь с id=" + userId + " не найден");
+                });
 
         BookingStatus status = approved ? BookingStatus.APPROVED : BookingStatus.REJECTED;
         booking.setStatus(status);
-        return BookingMapper.toResponseDto(bookingRepository.save(booking));
+        Booking saved = bookingRepository.save(booking);
+        log.info("Updated booking id={} status={} by userId={}", bookingId, status, userId);
+        return BookingMapper.toResponseDto(saved);
     }
 
     @Override
     public List<ResponseBookingDto> getBookingsOfItemsOwnedByUser(Long userId, BookingState state) {
         getUserByIdOrThrow(userId);
-        List<Booking> bookings = handleStateForBookingsOfItemsOwnedByUser(userId, state);
-        return bookings.stream()
+        List<ResponseBookingDto> bookings = handleStateForBookingsOfItemsOwnedByUser(userId, state)
+                .stream()
                 .map(BookingMapper::toResponseDto)
                 .toList();
+        log.info("Loaded {} owner bookings for userId={}, state={}", bookings.size(), userId, state);
+        return bookings;
     }
 
     private Item getItemByIdOrThrow(long itemId) {
         return itemRepository
                 .findById(itemId)
-                .orElseThrow(() -> new NotFoundException("Вещь с id=" + itemId + " не найдена"));
+                .orElseThrow(() -> {
+                    log.warn("Item not found: id={}", itemId);
+                    return new NotFoundException("Вещь с id=" + itemId + " не найдена");
+                });
     }
 
     private User getUserByIdOrThrow(Long userId) {
         return userRepository
                 .findById(userId)
-                .orElseThrow(() -> new NotFoundException("Пользователь с id=" + userId + " не найден"));
-    }
-
-    private void isUserOwnerOfItem(Long userId, Item item) {
-        if (item.getOwner().getId().equals(userId)) {
-            throw new ForbiddenException("Пользователь с id=" + userId + " не владеет предметом с id=" + item.getId());
-        }
+                .orElseThrow(() -> {
+                    log.warn("User not found: id={}", userId);
+                    return new NotFoundException("Пользователь с id=" + userId + " не найден");
+                });
     }
 }

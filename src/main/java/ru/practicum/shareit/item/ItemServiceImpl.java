@@ -1,6 +1,7 @@
 package ru.practicum.shareit.item;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.booking.BookingRepository;
@@ -20,6 +21,7 @@ import ru.practicum.shareit.user.UserRepository;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ItemServiceImpl implements ItemService {
@@ -34,19 +36,24 @@ public class ItemServiceImpl implements ItemService {
         List<Item> items = itemRepository.findAllWithFetchedComments(ownerId);
         Booking lastBooking = bookingRepository.findPastApprovedByItemOwnerId(ownerId);
         Booking nextBooking = bookingRepository.findFutureApprovedByItemOwnerId(ownerId);
-
-        return items.stream()
+        List<ResponseItemDto> result = items.stream()
                 .map(item -> ItemMapper.toResponseItemDto(
                         item,
                         lastBooking,
                         nextBooking
                 ))
                 .toList();
+        log.info("Loaded {} items for ownerId={}, lastBooking={}, nextBooking={}",
+                result.size(), ownerId,
+                lastBooking != null ? lastBooking.getId() : null,
+                nextBooking != null ? nextBooking.getId() : null);
+        return result;
     }
 
     @Override
     public ResponseItemDto getItemById(Long itemId) {
         Item item = getItemByIdWithFetchedCommentOrThrow(itemId);
+        log.info("Found item id={}, comments={}", itemId, item.getComments().size());
         return ItemMapper.toResponseItemDto(item);
     }
 
@@ -58,13 +65,17 @@ public class ItemServiceImpl implements ItemService {
                 owner,
                 null
         );
-        return ItemMapper.toItemDto(itemRepository.save(item));
+        Item saved = itemRepository.save(item);
+        log.info("Created item id={} for ownerId={}", saved.getId(), ownerId);
+        return ItemMapper.toItemDto(saved);
     }
 
     @Override
     public ItemDto updateItem(Long ownerId, Long itemId, ItemDto itemDto) {
         Item item = getItemByIdOrThrow(itemId);
         if (!item.getOwner().getId().equals(ownerId)) {
+            log.warn("User id={} tried to update item id={} owned by id={}",
+                    ownerId, itemId, item.getOwner().getId());
             throw new ForbiddenException("Редактировать вещь может только её владелец");
         }
         if (itemDto.getName() != null && !itemDto.getName().isBlank()) {
@@ -76,17 +87,22 @@ public class ItemServiceImpl implements ItemService {
         if (itemDto.getAvailable() != null) {
             item.setAvailable(itemDto.getAvailable());
         }
-        return ItemMapper.toItemDto(itemRepository.save(item));
+        Item updated = itemRepository.save(item);
+        log.info("Updated item id={} by ownerId={}", itemId, ownerId);
+        return ItemMapper.toItemDto(updated);
     }
 
     @Override
     public List<ItemDto> searchItems(String text) {
         if (text == null || text.isBlank()) {
+            log.info("Search items skipped: blank text");
             return List.of();
         }
-        return itemRepository.findAllByAvailableAndText(text).stream()
+        List<ItemDto> items = itemRepository.findAllByAvailableAndText(text).stream()
                 .map(ItemMapper::toItemDto)
                 .toList();
+        log.info("Search items text='{}', found={}", text, items.size());
+        return items;
     }
 
     @Override
@@ -95,29 +111,47 @@ public class ItemServiceImpl implements ItemService {
         Item item = getItemByIdOrThrow(itemId);
         Booking booking = bookingRepository.findByItemIdAndBookerId(itemId, authorId);
 
+        if (booking == null) {
+            log.warn("Comment denied: no booking for authorId={}, itemId={}", authorId, itemId);
+            throw new BadRequestException("Пользователь не бронировал эту вещь");
+        }
+
         if (booking.getStatus() == BookingStatus.APPROVED && booking.getEnd().isAfter(LocalDateTime.now())) {
+            log.warn("Comment denied: active approved booking id={} for authorId={}, itemId={}",
+                    booking.getId(), authorId, itemId);
             throw new BadRequestException("Нельзя комментировать при одобренном букинге, который еще не завершен.");
         }
 
         Comment comment = CommentMapper.toComment(commentDto, author, item);
-        return CommentMapper.toResponseCommentDto(commentRepository.save(comment));
+        Comment saved = commentRepository.save(comment);
+        log.info("Created comment id={} for itemId={} by authorId={}", saved.getId(), itemId, authorId);
+        return CommentMapper.toResponseCommentDto(saved);
     }
 
     private User getUserByIdOrThrow(Long userId) {
         return userRepository
                 .findById(userId)
-                .orElseThrow(() -> new NotFoundException("Пользователь с id=" + userId + " не найден"));
+                .orElseThrow(() -> {
+                    log.warn("User not found: id={}", userId);
+                    return new NotFoundException("Пользователь с id=" + userId + " не найден");
+                });
     }
 
     private Item getItemByIdOrThrow(long itemId) {
         return itemRepository
                 .findById(itemId)
-                .orElseThrow(() -> new NotFoundException("Вещь с id=" + itemId + " не найдена"));
+                .orElseThrow(() -> {
+                    log.warn("Item not found: id={}", itemId);
+                    return new NotFoundException("Вещь с id=" + itemId + " не найдена");
+                });
     }
 
     private Item getItemByIdWithFetchedCommentOrThrow(long itemId) {
         return itemRepository
                 .findByIdWithFetchedComments(itemId)
-                .orElseThrow(() -> new NotFoundException("Вещь с id=" + itemId + " не найдена"));
+                .orElseThrow(() -> {
+                    log.warn("Item not found: id={}", itemId);
+                    return new NotFoundException("Вещь с id=" + itemId + " не найдена");
+                });
     }
 }
