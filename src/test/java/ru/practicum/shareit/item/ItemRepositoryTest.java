@@ -27,7 +27,7 @@ class ItemRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        userRepository.create(ItemConstantsTest.OWNER);
+        userRepository.save(ItemConstantsTest.OWNER);
     }
 
     @Test
@@ -41,7 +41,7 @@ class ItemRepositoryTest {
                 ItemConstantsTest.OWNER
         );
 
-        Item saved = itemRepository.create(item);
+        Item saved = itemRepository.save(item);
 
         assertNotNull(saved.getId());
         assertEquals(ItemConstantsTest.VALID_ITEM_DTO.getName(), saved.getName());
@@ -50,7 +50,7 @@ class ItemRepositoryTest {
     @Test
     @DisplayName("Get item by id")
     void findItemById_existingItem_return() {
-        Item saved = itemRepository.create(ItemConstantsTest.createItem(
+        Item saved = itemRepository.save(ItemConstantsTest.createItem(
                 null, "Дрель", "Описание", true, ItemConstantsTest.OWNER
         ));
 
@@ -62,30 +62,30 @@ class ItemRepositoryTest {
 
     @Test
     @DisplayName("Find items by owner id")
-    void getByOwnerId_ownerHasItems_returnOwnerItems() {
-        itemRepository.create(ItemConstantsTest.createItem(
+    void findAllByOwnerId_ownerHasItems_returnOwnerItems() {
+        itemRepository.save(ItemConstantsTest.createItem(
                 null, "Дрель", "Описание", true, ItemConstantsTest.OWNER
         ));
-        itemRepository.create(ItemConstantsTest.createItem(
+        itemRepository.save(ItemConstantsTest.createItem(
                 null, "Книга", "Описание", true, ItemConstantsTest.OWNER
         ));
 
-        List<Item> items = itemRepository.getByOwnerId(ItemConstantsTest.OWNER.getId());
+        List<Item> items = itemRepository.findAllByOwnerId(ItemConstantsTest.OWNER.getId());
 
         assertEquals(2, items.size());
     }
 
     @Test
     @DisplayName("Search available items by text")
-    void getAvailableByText_matchingAvailableItem_returnItem() {
-        itemRepository.create(ItemConstantsTest.createItem(
+    void findAvailableByText_matchingAvailableItem_returnItem() {
+        itemRepository.save(ItemConstantsTest.createItem(
                 null, "Дрель", "Описание дрели", true, ItemConstantsTest.OWNER
         ));
-        itemRepository.create(ItemConstantsTest.createItem(
+        itemRepository.save(ItemConstantsTest.createItem(
                 null, "Книга", "Описание книги", false, ItemConstantsTest.OWNER
         ));
 
-        List<Item> items = itemRepository.getAvailableByText(ItemConstantsTest.SEARCH_TEXT);
+        List<Item> items = itemRepository.findAllByAvailableAndText(ItemConstantsTest.SEARCH_TEXT);
 
         assertEquals(1, items.size());
         assertEquals("Дрель", items.getFirst().getName());
@@ -94,12 +94,12 @@ class ItemRepositoryTest {
     @Test
     @DisplayName("Update item")
     void updateItem_existingItem_returnUpdated() {
-        Item saved = itemRepository.create(ItemConstantsTest.createItem(
+        Item saved = itemRepository.save(ItemConstantsTest.createItem(
                 null, "Дрель", "Описание", true, ItemConstantsTest.OWNER
         ));
         saved.setName("Отвёртка");
 
-        Item updated = itemRepository.update(saved);
+        Item updated = itemRepository.save(saved);
 
         assertEquals("Отвёртка", updated.getName());
         assertEquals("Отвёртка", itemRepository.findById(saved.getId()).orElseThrow().getName());

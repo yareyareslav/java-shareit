@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import ru.practicum.shareit.shared.dto.group.OnCreate;
 import ru.practicum.shareit.shared.dto.group.OnUpdate;
 
+import java.util.List;
+
 /**
  * TODO Sprint add-controllers.
  */

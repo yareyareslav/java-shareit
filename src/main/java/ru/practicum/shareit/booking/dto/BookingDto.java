@@ -1,17 +1,10 @@
 package ru.practicum.shareit.booking.dto;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import jakarta.validation.Valid;
+import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
-import org.springframework.validation.annotation.Validated;
-import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.booking.BookingStatus;
-import ru.practicum.shareit.item.Item;
 import ru.practicum.shareit.shared.dto.group.OnCreate;
-import ru.practicum.shareit.user.User;
-
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -23,17 +16,16 @@ public class BookingDto {
     private Long id;
 
     @NotNull(groups = {OnCreate.class})
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDateTime startRentDate;
+    @FutureOrPresent(groups = {OnCreate.class})
+    private LocalDateTime start;
 
     @NotNull(groups = {OnCreate.class})
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDateTime endRentDate;
+    @FutureOrPresent(groups = {OnCreate.class})
+    private LocalDateTime end;
 
     @NotNull(groups = {OnCreate.class})
     private Long itemId;
 
-    @NotNull(groups = {OnCreate.class})
     private Long bookerId;
 
     private BookingStatus status;

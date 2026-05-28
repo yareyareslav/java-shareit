@@ -4,7 +4,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.item.dto.ResponseCommentDto;
+import ru.practicum.shareit.item.dto.ResponseItemDto;
 import ru.practicum.shareit.shared.constant.Headers;
 import ru.practicum.shareit.shared.dto.group.OnCreate;
 import ru.practicum.shareit.shared.error.BadRequestException;
@@ -42,13 +45,22 @@ public class ItemController {
         return itemService.updateItem(userId, itemId, itemDto);
     }
 
+    @PostMapping("/{itemId}/comment")
+    public ResponseCommentDto createComment(
+            @PathVariable Long itemId,
+            @RequestHeader(Headers.USER_ID) Long userId,
+            @Validated(OnCreate.class) @RequestBody CommentDto commentDto
+    ) {
+        return itemService.createComment(userId, itemId, commentDto);
+    }
+
     @GetMapping("/{itemId}")
-    public ItemDto getItem(@PathVariable Long itemId) {
+    public ResponseItemDto getItem(@PathVariable Long itemId) {
         return itemService.getItemById(itemId);
     }
 
     @GetMapping
-    public List<ItemDto> getOwnerItems(@RequestHeader(Headers.USER_ID) Long userId) {
+    public List<ResponseItemDto> getOwnerItems(@RequestHeader(Headers.USER_ID) Long userId) {
         return itemService.getItemsByOwner(userId);
     }
 

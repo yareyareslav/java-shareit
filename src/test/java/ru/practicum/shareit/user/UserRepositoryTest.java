@@ -23,17 +23,17 @@ class UserRepositoryTest {
     @Test
     @DisplayName("Find all users")
     void getAll_getAllUsers_returnTwoUsers() {
-        userRepository.create(UserConstantsTest.VALID_USER_1);
-        userRepository.create(UserConstantsTest.VALID_USER_2);
+        userRepository.save(UserConstantsTest.VALID_USER_1);
+        userRepository.save(UserConstantsTest.VALID_USER_2);
 
-        List<User> users = userRepository.getAll();
+        List<User> users = userRepository.findAll();
         assertEquals(2, users.size());
     }
 
     @Test
     @DisplayName("Find user by id")
     void getById_getExistingUserById_returnExistingUserWithProvidedId() {
-        userRepository.create(UserConstantsTest.VALID_USER_1);
+        userRepository.save(UserConstantsTest.VALID_USER_1);
 
         Optional<User> user = userRepository.findById(UserConstantsTest.VALID_USER_1.getId());
         assertTrue(user.isPresent());
@@ -53,7 +53,7 @@ class UserRepositoryTest {
     @Test
     @DisplayName("Find existing user by email")
     void getByEmail_getExistingUserByEmail_returnExistingUserWithProvidedEmail() {
-        userRepository.create(UserConstantsTest.VALID_USER_1);
+        userRepository.save(UserConstantsTest.VALID_USER_1);
 
         Optional<User> user = userRepository.findByEmail(UserConstantsTest.VALID_USER_1.getEmail());
         assertTrue(user.isPresent());
@@ -73,7 +73,7 @@ class UserRepositoryTest {
     @Test
     @DisplayName("Save user with id")
     void save_createUserWithId_returnUser() {
-        User user = userRepository.create(UserConstantsTest.VALID_USER_1);
+        User user = userRepository.save(UserConstantsTest.VALID_USER_1);
 
         assertEquals(UserConstantsTest.VALID_USER_1.getId(), user.getId());
         assertEquals(UserConstantsTest.VALID_USER_1.getName(), user.getName());
@@ -83,7 +83,7 @@ class UserRepositoryTest {
     @Test
     @DisplayName("Save user without id assigns generated id")
     void save_createUserWithoutId_assignsId() {
-        User user = userRepository.create(UserConstantsTest.NEW_USER);
+        User user = userRepository.save(UserConstantsTest.NEW_USER);
 
         assertNotNull(user.getId());
         assertEquals(UserConstantsTest.NEW_USER.getName(), user.getName());
@@ -93,11 +93,11 @@ class UserRepositoryTest {
     @Test
     @DisplayName("Update user")
     void update_updateExistingUser_returnUpdatedUser() {
-        userRepository.create(UserConstantsTest.VALID_USER_1);
+        userRepository.save(UserConstantsTest.VALID_USER_1);
         User user = userRepository.findById(1L).orElseThrow();
         user.setName("Updated");
 
-        User updated = userRepository.update(user);
+        User updated = userRepository.save(user);
 
         assertEquals("Updated", updated.getName());
         assertEquals(UserConstantsTest.VALID_USER_1.getEmail(), updated.getEmail());
@@ -106,9 +106,9 @@ class UserRepositoryTest {
     @Test
     @DisplayName("Delete user by id")
     void deleteById_deleteExistingUser_userNotFoundAfterDelete() {
-        userRepository.create(UserConstantsTest.VALID_USER_1);
+        userRepository.save(UserConstantsTest.VALID_USER_1);
 
-        userRepository.delete(UserConstantsTest.VALID_USER_1.getId());
+        userRepository.deleteById(UserConstantsTest.VALID_USER_1.getId());
 
         assertTrue(userRepository.findById(UserConstantsTest.VALID_USER_1.getId()).isEmpty());
     }

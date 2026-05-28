@@ -7,6 +7,8 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
+    Booking findByItemIdAndBookerId(Long itemId, Long bookerId);
+
     // -------------------------------------------------
     // ------------- ITEM OWNER ID ---------------------
     // -------------------------------------------------
@@ -15,7 +17,29 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @Query("""
             SELECT b
             FROM Booking b
-            WHERE b.item.owner.id == :owner_id
+            WHERE b.item.owner.id = :ownerId
+                AND b.end < CURRENT_TIMESTAMP
+            ORDER BY b.item.id, b.end DESC
+            """)
+    Booking findPastApprovedByItemOwnerId(
+            @Param("ownerId") Long ownerId
+    );
+
+    @Query("""
+            SELECT b
+            FROM Booking b
+            WHERE b.item.owner.id = :ownerId
+                AND b.start > CURRENT_TIMESTAMP
+            ORDER BY b.item.id, b.start ASC
+            """)
+    Booking findFutureApprovedByItemOwnerId(
+            @Param("ownerId") Long ownerId
+    );
+
+    @Query("""
+            SELECT b
+            FROM Booking b
+            WHERE b.item.owner.id = :owner_id
                 AND b.start >= CURRENT_TIMESTAMP
             """)
     List<Booking> findAllByItemOwnerIdAndInFuture(@Param("owner_id") Long ownerId);
@@ -23,15 +47,15 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @Query("""
             SELECT b
             FROM Booking b
-            WHERE b.item.owner.id == :owner_id
+            WHERE b.item.owner.id = :owner_id
                 AND b.end <= CURRENT_TIMESTAMP
             """)
-    List<Booking> findAllByItemOwnerIdAndInPast(Long ownerId);
+    List<Booking> findAllByItemOwnerIdAndInPast(@Param("owner_id") Long ownerId);
 
     @Query("""
             SELECT b
             FROM Booking b
-            WHERE b.item.owner.id == :owner_id
+            WHERE b.item.owner.id = :owner_id
                 AND b.start <= CURRENT_TIMESTAMP
                 AND b.end >= CURRENT_TIMESTAMP
             """)

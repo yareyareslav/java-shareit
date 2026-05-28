@@ -1,42 +1,65 @@
 package ru.practicum.shareit.item;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import ru.practicum.shareit.booking.Booking;
+import ru.practicum.shareit.booking.BookingRepository;
+import ru.practicum.shareit.booking.BookingStatus;
+import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.item.dto.ResponseCommentDto;
+import ru.practicum.shareit.item.dto.ResponseItemDto;
+import ru.practicum.shareit.item.mapper.CommentMapper;
 import ru.practicum.shareit.item.mapper.ItemMapper;
+import ru.practicum.shareit.shared.error.BadRequestException;
 import ru.practicum.shareit.shared.error.ForbiddenException;
 import ru.practicum.shareit.shared.error.NotFoundException;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserRepository;
 
+import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ItemServiceImpl implements ItemService {
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
+    private final CommentRepository commentRepository;
+    private final BookingRepository bookingRepository;
 
     @Override
-    public List<ItemDto> getItemsByOwner(Long ownerId) {
+    public List<ResponseItemDto> getItemsByOwner(Long ownerId) {
         getUserByIdOrThrow(ownerId);
-        return itemRepository.getByOwnerId(ownerId).stream()
-                .map(ItemMapper::toItemDto)
+        List<Item> items = itemRepository.findAllWithFetchedComments(ownerId);
+        Booking lastBooking = bookingRepository.findPastApprovedByItemOwnerId(ownerId);
+        Booking nextBooking = bookingRepository.findFutureApprovedByItemOwnerId(ownerId);
+
+        return items.stream()
+                .map(item -> ItemMapper.toResponseItemDto(
+                        item,
+                        lastBooking,
+                        nextBooking
+                ))
                 .toList();
     }
 
     @Override
-    public ItemDto getItemById(Long itemId) {
-        Item item = getItemByIdOrThrow(itemId);
-        return ItemMapper.toItemDto(item);
+    public ResponseItemDto getItemById(Long itemId) {
+        Item item = getItemByIdWithFetchedCommentOrThrow(itemId);
+        return ItemMapper.toResponseItemDto(item);
     }
 
     @Override
     public ItemDto createItem(Long ownerId, ItemDto itemDto) {
-        getUserByIdOrThrow(ownerId);
+        User owner = getUserByIdOrThrow(ownerId);
         Item item = ItemMapper.toItem(
                 itemDto,
-                ownerId,
+                owner,
                 null
         );
         return ItemMapper.toItemDto(itemRepository.save(item));
@@ -65,9 +88,23 @@ public class ItemServiceImpl implements ItemService {
         if (text == null || text.isBlank()) {
             return List.of();
         }
-        return itemRepository.getAvailableByText(text).stream()
+        return itemRepository.findAllByAvailableAndText(text).stream()
                 .map(ItemMapper::toItemDto)
                 .toList();
+    }
+
+    @Override
+    public ResponseCommentDto createComment(Long authorId, Long itemId, CommentDto commentDto) {
+        User author = getUserByIdOrThrow(authorId);
+        Item item = getItemByIdOrThrow(itemId);
+        Booking booking = bookingRepository.findByItemIdAndBookerId(itemId, authorId);
+
+        if (booking.getStatus() == BookingStatus.APPROVED && booking.getEnd().isAfter(LocalDateTime.now())) {
+            throw new BadRequestException("Нельзя комментировать при одобренном букинге, который еще не завершен.");
+        }
+
+        Comment comment = CommentMapper.toComment(commentDto, author, item);
+        return CommentMapper.toResponseCommentDto(commentRepository.save(comment));
     }
 
     private User getUserByIdOrThrow(Long userId) {
@@ -80,5 +117,20 @@ public class ItemServiceImpl implements ItemService {
         return itemRepository
                 .findById(itemId)
                 .orElseThrow(() -> new NotFoundException("Вещь с id=" + itemId + " не найдена"));
+    }
+
+    private Item getItemByIdWithFetchedCommentOrThrow(long itemId) {
+        return itemRepository
+                .findByIdWithFetchedComments(itemId)
+                .orElseThrow(() -> new NotFoundException("Вещь с id=" + itemId + " не найдена"));
+    }
+
+    private Map<Long, Booking> toFirstBookingPerItem(List<Booking> bookings) {
+        Map<Long, Booking> result = new HashMap<>();
+        for (Booking booking : bookings) {
+            Long itemId = booking.getItem().getId();
+            result.putIfAbsent(itemId, booking);
+        }
+        return result;
     }
 }

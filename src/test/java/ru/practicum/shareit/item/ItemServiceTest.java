@@ -6,12 +6,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import ru.practicum.shareit.booking.Booking;
+import ru.practicum.shareit.booking.BookingStatus;
 import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.item.dto.ResponseItemDto;
 import ru.practicum.shareit.shared.error.ForbiddenException;
 import ru.practicum.shareit.shared.error.NotFoundException;
 import ru.practicum.shareit.user.UserConstantsTest;
 import ru.practicum.shareit.user.UserRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -32,6 +37,12 @@ class ItemServiceTest {
     @Mock
     UserRepository userRepository;
 
+    @Mock
+    CommentRepository commentRepository;
+
+    @Mock
+    ru.practicum.shareit.booking.BookingRepository bookingRepository;
+
     @InjectMocks
     ItemServiceImpl itemService;
 
@@ -39,13 +50,46 @@ class ItemServiceTest {
     @DisplayName("Get items by owner")
     void getItemsByOwner_existingOwner_returnItems() {
         Item item = ItemConstantsTest.createItem(1L, "Дрель", "Описание", true, ItemConstantsTest.OWNER);
+        item.setComments(List.of(new Comment(1L, null, item, "Отзыв", null)));
         when(userRepository.findById(1L)).thenReturn(Optional.of(ItemConstantsTest.OWNER));
-        when(itemRepository.getByOwnerId(1L)).thenReturn(List.of(item));
+        when(itemRepository.findAllWithFetchedComments(1L)).thenReturn(List.of(item));
 
-        List<ItemDto> items = itemService.getItemsByOwner(1L);
+        List<ResponseItemDto> items = itemService.getItemsByOwner(1L);
 
         assertEquals(1, items.size());
         assertEquals("Дрель", items.getFirst().getName());
+        assertEquals(1, items.getFirst().getComments().size());
+        assertEquals("Отзыв", items.getFirst().getComments().getFirst().getText());
+    }
+
+    @Test
+    @DisplayName("Get items by owner with last and next bookings")
+    void getItemsByOwner_withBookings_returnItemsWithBookingDates() {
+        Item item = ItemConstantsTest.createItem(1L, "Дрель", "Описание", true, ItemConstantsTest.OWNER);
+        Booking lastBooking = new Booking(
+                10L,
+                LocalDateTime.now().minusDays(5),
+                LocalDateTime.now().minusDays(3),
+                item,
+                ItemConstantsTest.OWNER,
+                BookingStatus.APPROVED
+        );
+        Booking nextBooking = new Booking(
+                11L,
+                LocalDateTime.now().plusDays(1),
+                LocalDateTime.now().plusDays(3),
+                item,
+                UserConstantsTest.VALID_USER_2,
+                BookingStatus.APPROVED
+        );
+        when(userRepository.findById(1L)).thenReturn(Optional.of(ItemConstantsTest.OWNER));
+        when(itemRepository.findAllWithFetchedComments(1L)).thenReturn(List.of(item));
+
+        List<ResponseItemDto> items = itemService.getItemsByOwner(1L);
+
+        assertEquals(1, items.size());
+        assertEquals(10L, items.getFirst().getLastBooking().getId());
+        assertEquals(11L, items.getFirst().getNextBooking().getId());
     }
 
     @Test
@@ -60,17 +104,20 @@ class ItemServiceTest {
     @DisplayName("Get item by id")
     void getItemById_existingItem_returnItemDto() {
         Item item = ItemConstantsTest.createItem(1L, "Дрель", "Описание", true, ItemConstantsTest.OWNER);
-        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
+        item.setComments(List.of(new Comment(1L, null, item, "Комментарий", null)));
+        when(itemRepository.findByIdWithFetchedComments(1L)).thenReturn(Optional.of(item));
 
-        ItemDto dto = itemService.getItemById(1L);
+        ResponseItemDto dto = itemService.getItemById(1L);
 
         assertEquals("Дрель", dto.getName());
+        assertEquals(1, dto.getComments().size());
+        assertEquals("Комментарий", dto.getComments().getFirst().getText());
     }
 
     @Test
     @DisplayName("Get non-existing item by id")
     void getItemById_nonExistingItem_throwNotFoundException() {
-        when(itemRepository.findById(99L)).thenReturn(Optional.empty());
+        when(itemRepository.findByIdWithFetchedComments(99L)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> itemService.getItemById(99L));
     }
@@ -79,7 +126,7 @@ class ItemServiceTest {
     @DisplayName("Create item")
     void createItem_validOwner_returnItemDto() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(ItemConstantsTest.OWNER));
-        when(itemRepository.create(any(Item.class))).thenAnswer(invocation -> {
+        when(itemRepository.save(any(Item.class))).thenAnswer(invocation -> {
             Item item = invocation.getArgument(0);
             item.setId(10L);
             return item;
@@ -96,7 +143,7 @@ class ItemServiceTest {
     void updateItem_ownerUpdatesOwnItem_returnUpdatedItemDto() {
         Item item = ItemConstantsTest.createItem(1L, "Дрель", "Описание", true, ItemConstantsTest.OWNER);
         when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
-        when(itemRepository.update(any(Item.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(itemRepository.save(any(Item.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         ItemDto dto = itemService.updateItem(1L, 1L, ItemConstantsTest.ITEM_UPDATE_DTO);
 
@@ -114,7 +161,7 @@ class ItemServiceTest {
 
         assertThrows(ForbiddenException.class,
                 () -> itemService.updateItem(1L, 1L, ItemConstantsTest.ITEM_UPDATE_DTO));
-        verify(itemRepository, never()).update(any());
+        verify(itemRepository, never()).save(any());
     }
 
     @Test
@@ -129,7 +176,7 @@ class ItemServiceTest {
     @DisplayName("Search items by text")
     void searchItems_matchingText_returnItems() {
         Item item = ItemConstantsTest.createItem(1L, "Дрель", "Описание", true, ItemConstantsTest.OWNER);
-        when(itemRepository.getAvailableByText(ItemConstantsTest.SEARCH_TEXT)).thenReturn(List.of(item));
+        when(itemRepository.findAllByAvailableAndText(ItemConstantsTest.SEARCH_TEXT)).thenReturn(List.of(item));
 
         List<ItemDto> items = itemService.searchItems(ItemConstantsTest.SEARCH_TEXT);
 
