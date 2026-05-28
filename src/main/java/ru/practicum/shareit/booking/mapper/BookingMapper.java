@@ -11,10 +11,10 @@ public class BookingMapper implements TwoWayMapper<Booking, BookingDto> {
         return new Booking(
                 bookingDto.getId(),
                 bookingDto.getStartRentDate() != null
-                        ? bookingDto.getStartRentDate().atStartOfDay()
+                        ? bookingDto.getStartRentDate()
                         : null,
                 bookingDto.getEndRentDate() != null
-                        ? bookingDto.getEndRentDate().atStartOfDay()
+                        ? bookingDto.getEndRentDate()
                         : null,
                 null,
                 null,
@@ -26,8 +26,8 @@ public class BookingMapper implements TwoWayMapper<Booking, BookingDto> {
     public BookingDto toPresentation(Booking booking) {
         return new BookingDto(
                 booking.getId(),
-                booking.getStart() != null ? booking.getStart().toLocalDate() : null,
-                booking.getEnd() != null ? booking.getEnd().toLocalDate() : null,
+                booking.getStart(),
+                booking.getEnd(),
                 booking.getItem() != null ? booking.getItem().getId() : null,
                 booking.getBooker() != null ? booking.getBooker().getId() : null,
                 booking.getStatus()

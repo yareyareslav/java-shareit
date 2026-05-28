@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.shared.constant.Headers;
 import ru.practicum.shareit.shared.dto.group.OnCreate;
 import ru.practicum.shareit.shared.error.BadRequestException;
 
@@ -18,18 +19,16 @@ import java.util.List;
 @RequiredArgsConstructor
 @RequestMapping("/items")
 public class ItemController {
-    private static final String SHARER_USER_ID_HEADER = "X-Sharer-User-Id";
-
     private final ItemService itemService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ItemDto createItem(
-            @RequestHeader(SHARER_USER_ID_HEADER) Long userId,
+            @RequestHeader(Headers.USER_ID) Long userId,
             @Validated(OnCreate.class) @RequestBody ItemDto itemDto
     ) {
         if (userId == null) {
-            throw new BadRequestException(SHARER_USER_ID_HEADER + " не должен быть пустым");
+            throw new BadRequestException(Headers.USER_ID + " не должен быть пустым");
         }
         return itemService.createItem(userId, itemDto);
     }
@@ -37,7 +36,7 @@ public class ItemController {
     @PatchMapping("/{itemId}")
     public ItemDto updateItem(
             @PathVariable Long itemId,
-            @RequestHeader(SHARER_USER_ID_HEADER) Long userId,
+            @RequestHeader(Headers.USER_ID) Long userId,
             @RequestBody ItemDto itemDto
     ) {
         return itemService.updateItem(userId, itemId, itemDto);
@@ -49,7 +48,7 @@ public class ItemController {
     }
 
     @GetMapping
-    public List<ItemDto> getOwnerItems(@RequestHeader(SHARER_USER_ID_HEADER) Long userId) {
+    public List<ItemDto> getOwnerItems(@RequestHeader(Headers.USER_ID) Long userId) {
         return itemService.getItemsByOwner(userId);
     }
 

@@ -16,7 +16,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<UserDto> getAllUsers() {
-        return userRepository.getAll().stream()
+        return userRepository.findAll().stream()
                 .map(UserMapper::toUserDto)
                 .toList();
     }
@@ -30,7 +30,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDto createUser(UserDto userDto) {
         checkEmailDuplicates(userDto.getEmail());
-        User saved = userRepository.create(UserMapper.toUser(userDto));
+        User saved = userRepository.save(UserMapper.toUser(userDto));
         return UserMapper.toUserDto(saved);
     }
 
@@ -44,13 +44,13 @@ public class UserServiceImpl implements UserService {
         if (userDto.getName() != null && !userDto.getName().isBlank()) {
             user.setName(userDto.getName());
         }
-        return UserMapper.toUserDto(userRepository.update(user));
+        return UserMapper.toUserDto(userRepository.save(user));
     }
 
     @Override
     public void deleteUser(Long id) {
         findUserByIdOrThrow(id);
-        userRepository.delete(id);
+        userRepository.deleteById(id);
     }
 
     private User findUserByIdOrThrow(Long id) {

@@ -39,13 +39,13 @@ public class ItemServiceImpl implements ItemService {
                 ownerId,
                 null
         );
-        return ItemMapper.toItemDto(itemRepository.create(item));
+        return ItemMapper.toItemDto(itemRepository.save(item));
     }
 
     @Override
     public ItemDto updateItem(Long ownerId, Long itemId, ItemDto itemDto) {
         Item item = getItemByIdOrThrow(itemId);
-        if (!item.getOwnerId().equals(ownerId)) {
+        if (!item.getOwner().getId().equals(ownerId)) {
             throw new ForbiddenException("Редактировать вещь может только её владелец");
         }
         if (itemDto.getName() != null && !itemDto.getName().isBlank()) {
@@ -57,7 +57,7 @@ public class ItemServiceImpl implements ItemService {
         if (itemDto.getAvailable() != null) {
             item.setAvailable(itemDto.getAvailable());
         }
-        return ItemMapper.toItemDto(itemRepository.update(item));
+        return ItemMapper.toItemDto(itemRepository.save(item));
     }
 
     @Override
