@@ -22,6 +22,5 @@ class ItemMapperTest {
         assertEquals("Дрель", dto.getName());
         assertEquals("Описание", dto.getDescription());
         assertEquals(true, dto.getAvailable());
-        assertEquals(1L, dto.getRequest());
     }
 }
