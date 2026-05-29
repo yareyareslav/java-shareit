@@ -9,6 +9,15 @@ import java.util.List;
 public interface BookingRepository extends JpaRepository<Booking, Long> {
     Booking findByItemIdAndBookerId(Long itemId, Long bookerId);
 
+    @Query("""
+            SELECT b
+            FROM Booking b
+            WHERE b.item.id IN :ids
+                AND b.status = 'APPROVED'
+            ORDER BY b.start DESC
+            """)
+    List<Booking> findAllByItemIdsAndStatusApproved(@Param("ids") Iterable<Long> ids);
+
     // -------------------------------------------------
     // ------------- ITEM OWNER ID ---------------------
     // -------------------------------------------------

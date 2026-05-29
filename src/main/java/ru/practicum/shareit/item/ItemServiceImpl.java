@@ -19,6 +19,8 @@ import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserRepository;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 
 @Slf4j
@@ -33,20 +35,36 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public List<ResponseItemDto> getItemsByOwner(Long ownerId) {
         getUserByIdOrThrow(ownerId);
-        List<Item> items = itemRepository.findAllWithFetchedComments(ownerId);
-        Booking lastBooking = bookingRepository.findPastApprovedByItemOwnerId(ownerId);
-        Booking nextBooking = bookingRepository.findFutureApprovedByItemOwnerId(ownerId);
-        List<ResponseItemDto> result = items.stream()
-                .map(item -> ItemMapper.toResponseItemDto(
-                        item,
-                        lastBooking,
-                        nextBooking
-                ))
+        List<Item> items = itemRepository
+                .findAllWithFetchedComments(ownerId);
+        List<Long> itemIds = items.stream()
+                .map(Item::getId)
                 .toList();
-        log.info("Loaded {} items for ownerId={}, lastBooking={}, nextBooking={}",
-                result.size(), ownerId,
-                lastBooking != null ? lastBooking.getId() : null,
-                nextBooking != null ? nextBooking.getId() : null);
+
+        List<Booking> approvedBookingsOfUserDescByStart = bookingRepository
+                .findAllByItemIdsAndStatusApproved(itemIds);
+        HashMap<Long, List<Booking>> bByItems = attachBookingsToItem(approvedBookingsOfUserDescByStart);
+
+        List<Booking> approvedBookingsOnlyInFuture = approvedBookingsOfUserDescByStart != null
+                ? approvedBookingsOfUserDescByStart.stream()
+                    .filter(b -> b.getStart().isAfter(LocalDateTime.now()))
+                    .toList()
+                : null;
+        HashMap<Long, List<Booking>> bInFutureByItems = attachBookingsToItem(approvedBookingsOnlyInFuture);
+
+        List<ResponseItemDto> result = items.stream()
+                .map(i -> {
+                    Long itemId = i.getId();
+
+                    List<Booking> bOfItem = bByItems != null ? bByItems.get(itemId) : null;
+                    List<Booking> bInFutureOfItem = bInFutureByItems != null ? bInFutureByItems.get(itemId) : null;
+
+                    Booking lastBooking = bOfItem != null ? bOfItem.getFirst() : null;
+                    Booking nextBooking = bInFutureOfItem != null ? bInFutureOfItem.getLast() : null;
+                    return ItemMapper.toResponseItemDto(i, lastBooking, nextBooking);
+                }).toList();
+
+        log.info("Loaded {} items for ownerId={}", result.size(), ownerId);
         return result;
     }
 
@@ -153,5 +171,17 @@ public class ItemServiceImpl implements ItemService {
                     log.warn("Item not found: id={}", itemId);
                     return new NotFoundException("Вещь с id=" + itemId + " не найдена");
                 });
+    }
+
+    private HashMap<Long, List<Booking>> attachBookingsToItem(List<Booking> bookings) {
+        if (bookings == null) {
+            return null;
+        }
+        HashMap<Long, List<Booking>> bookingsByItems = new HashMap<>();
+        for (Booking b : bookings) {
+            Long itemId = b.getItem().getId();
+            bookingsByItems.getOrDefault(itemId, Collections.emptyList()).add(b);
+        }
+        return bookingsByItems;
     }
 }

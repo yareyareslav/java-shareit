@@ -72,11 +72,7 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public ResponseBookingDto getBookingById(Long bookingId, Long userId) {
         getUserByIdOrThrow(userId);
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> {
-                    log.warn("Booking not found: id={}", bookingId);
-                    return new NotFoundException("Бронирование с id=" + bookingId + " не найдено");
-                });
+        Booking booking = getBookingByIdOrThrow(bookingId);
         if (!booking.getBooker().getId().equals(userId) && !booking.getItem().getOwner().getId().equals(userId)) {
             log.warn("Booking access denied: bookingId={}, userId={}", bookingId, userId);
             throw new ForbiddenException("Вы не являетесь создателем запроса или владельцем предмета из запроса.");
@@ -106,17 +102,12 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public ResponseBookingDto updateStatus(Long userId, Long bookingId, Boolean approved) {
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> {
-                    log.warn("Booking not found: id={}", bookingId);
-                    return new NotFoundException("Бронирование с id=" + bookingId + " не найдено");
-                });
-        userRepository
-                .findById(userId)
-                .orElseThrow(() -> {
-                    log.warn("User not found on booking status update: userId={}", userId);
-                    return new ForbiddenException("Пользователь с id=" + userId + " не найден");
-                });
+        Booking booking = getBookingByIdOrThrow(bookingId);
+        getUserByIdOrThrowForbidden(userId);
+
+        if (!booking.getStatus().equals(BookingStatus.WAITING)) {
+            throw new ForbiddenException("Заявка с id=" + bookingId + " не находится в статусе ожидания.");
+        }
 
         BookingStatus status = approved ? BookingStatus.APPROVED : BookingStatus.REJECTED;
         booking.setStatus(status);
@@ -136,6 +127,14 @@ public class BookingServiceImpl implements BookingService {
         return bookings;
     }
 
+    private Booking getBookingByIdOrThrow(long bookingId) {
+        return bookingRepository.findById(bookingId)
+                .orElseThrow(() -> {
+                    log.warn("Booking not found: id={}", bookingId);
+                    return new NotFoundException("Бронирование с id=" + bookingId + " не найдено");
+                });
+    }
+
     private Item getItemByIdOrThrow(long itemId) {
         return itemRepository
                 .findById(itemId)
@@ -151,6 +150,15 @@ public class BookingServiceImpl implements BookingService {
                 .orElseThrow(() -> {
                     log.warn("User not found: id={}", userId);
                     return new NotFoundException("Пользователь с id=" + userId + " не найден");
+                });
+    }
+
+    private User getUserByIdOrThrowForbidden(Long userId) {
+        return userRepository
+                .findById(userId)
+                .orElseThrow(() -> {
+                    log.warn("User not found on booking status update: userId={}", userId);
+                    return new ForbiddenException("Пользователь с id=" + userId + " не найден");
                 });
     }
 }
