@@ -1,26 +1,32 @@
 package ru.practicum.shareit.booking.dto;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import jakarta.validation.constraints.FutureOrPresent;
+import jakarta.validation.constraints.NotNull;
+import lombok.*;
 import ru.practicum.shareit.booking.BookingStatus;
-
-import java.time.LocalDate;
+import ru.practicum.shareit.shared.dto.group.OnCreate;
+import java.time.LocalDateTime;
 
 /**
  * TODO Sprint add-bookings.
  */
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
 public class BookingDto {
     private Long id;
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate startRentDate;
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate endRentDate;
+
+    @NotNull(groups = {OnCreate.class})
+    @FutureOrPresent(groups = {OnCreate.class})
+    private LocalDateTime start;
+
+    @NotNull(groups = {OnCreate.class})
+    @FutureOrPresent(groups = {OnCreate.class})
+    private LocalDateTime end;
+
+    @NotNull(groups = {OnCreate.class})
     private Long itemId;
+
     private Long bookerId;
+
     private BookingStatus status;
 }

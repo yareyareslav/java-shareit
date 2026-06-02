@@ -4,6 +4,8 @@ import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserConstantsTest;
 
+import java.util.ArrayList;
+
 public class ItemConstantsTest {
     public static final ItemDto VALID_ITEM_DTO =
             new ItemDto(null, "Дрель", "Описание дрели", true, null, null);
@@ -16,6 +18,14 @@ public class ItemConstantsTest {
     public static final User OWNER = UserConstantsTest.VALID_USER_1;
 
     public static Item createItem(Long id, String name, String description, boolean available, User owner) {
-        return new Item(id, name, description, available, owner.getId(), null);
+        return new Item(
+                id,
+                name,
+                description,
+                available,
+                owner,
+                null,
+                new ArrayList<>()
+        );
     }
 }

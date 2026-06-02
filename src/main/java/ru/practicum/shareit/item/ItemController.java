@@ -1,35 +1,38 @@
 package ru.practicum.shareit.item;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.item.dto.ResponseCommentDto;
+import ru.practicum.shareit.item.dto.ResponseItemDto;
+import ru.practicum.shareit.shared.constant.Headers;
 import ru.practicum.shareit.shared.dto.group.OnCreate;
 import ru.practicum.shareit.shared.error.BadRequestException;
 
 import java.util.List;
 
-/**
- * TODO Sprint add-controllers.
- */
+@Slf4j
 @RestController
 @Validated
 @RequiredArgsConstructor
 @RequestMapping("/items")
 public class ItemController {
-    private static final String SHARER_USER_ID_HEADER = "X-Sharer-User-Id";
-
     private final ItemService itemService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ItemDto createItem(
-            @RequestHeader(SHARER_USER_ID_HEADER) Long userId,
+            @RequestHeader(Headers.USER_ID) Long userId,
             @Validated(OnCreate.class) @RequestBody ItemDto itemDto
     ) {
+        log.info("POST /items userId={}, name={}", userId, itemDto.getName());
         if (userId == null) {
-            throw new BadRequestException(SHARER_USER_ID_HEADER + " не должен быть пустым");
+            log.warn("POST /items rejected: missing header {}", Headers.USER_ID);
+            throw new BadRequestException(Headers.USER_ID + " не должен быть пустым");
         }
         return itemService.createItem(userId, itemDto);
     }
@@ -37,24 +40,38 @@ public class ItemController {
     @PatchMapping("/{itemId}")
     public ItemDto updateItem(
             @PathVariable Long itemId,
-            @RequestHeader(SHARER_USER_ID_HEADER) Long userId,
+            @RequestHeader(Headers.USER_ID) Long userId,
             @RequestBody ItemDto itemDto
     ) {
+        log.info("PATCH /items/{} userId={}", itemId, userId);
         return itemService.updateItem(userId, itemId, itemDto);
     }
 
+    @PostMapping("/{itemId}/comment")
+    public ResponseCommentDto createComment(
+            @PathVariable Long itemId,
+            @RequestHeader(Headers.USER_ID) Long userId,
+            @Validated(OnCreate.class) @RequestBody CommentDto commentDto
+    ) {
+        log.info("POST /items/{}/comment userId={}", itemId, userId);
+        return itemService.createComment(userId, itemId, commentDto);
+    }
+
     @GetMapping("/{itemId}")
-    public ItemDto getItem(@PathVariable Long itemId) {
+    public ResponseItemDto getItem(@PathVariable Long itemId) {
+        log.info("GET /items/{}", itemId);
         return itemService.getItemById(itemId);
     }
 
     @GetMapping
-    public List<ItemDto> getOwnerItems(@RequestHeader(SHARER_USER_ID_HEADER) Long userId) {
+    public List<ResponseItemDto> getOwnerItems(@RequestHeader(Headers.USER_ID) Long userId) {
+        log.info("GET /items userId={}", userId);
         return itemService.getItemsByOwner(userId);
     }
 
     @GetMapping("/search")
     public List<ItemDto> searchItems(@RequestParam String text) {
+        log.info("GET /items/search text={}", text);
         return itemService.searchItems(text);
     }
 }

@@ -9,11 +9,16 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import ru.practicum.shareit.booking.dto.BookingDto;
+import ru.practicum.shareit.item.dto.ResponseCommentDto;
+import ru.practicum.shareit.item.dto.ResponseItemDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.shared.error.ErrorHandler;
 import ru.practicum.shareit.shared.error.ForbiddenException;
 import ru.practicum.shareit.shared.error.NotFoundException;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -98,22 +103,47 @@ class ItemControllerTest {
     @Test
     @DisplayName("GET /items/{id} returns item")
     void getItem_returnOk() throws Exception {
-        when(itemService.getItemById(1L)).thenReturn(new ItemDto(1L, "Дрель", "Описание", true, null, null));
+        ResponseCommentDto comment = new ResponseCommentDto(1L, "Author", "Отличная вещь", Instant.now());
+        when(itemService.getItemById(1L))
+                .thenReturn(new ResponseItemDto(1L, "Дрель", "Описание", true, null, null, List.of(comment), null, null));
 
         mockMvc.perform(get("/items/1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1));
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.comments[0].text").value("Отличная вещь"));
     }
 
     @Test
     @DisplayName("GET /items returns owner items")
     void getOwnerItems_returnOk() throws Exception {
+        ResponseCommentDto comment = new ResponseCommentDto(1L, "Author", "Хорошо работает", Instant.now());
+        BookingDto lastBooking = new BookingDto(
+                10L,
+                LocalDateTime.now().minusDays(2),
+                LocalDateTime.now().minusDays(1),
+                1L,
+                2L,
+                null
+        );
+        BookingDto nextBooking = new BookingDto(
+                11L,
+                LocalDateTime.now().plusDays(1),
+                LocalDateTime.now().plusDays(2),
+                1L,
+                2L,
+                null
+        );
         when(itemService.getItemsByOwner(1L))
-                .thenReturn(List.of(new ItemDto(1L, "Дрель", "Описание", true, null, null)));
+                .thenReturn(List.of(new ResponseItemDto(
+                        1L, "Дрель", "Описание", true, null, null, List.of(comment), lastBooking, nextBooking
+                )));
 
         mockMvc.perform(get("/items").header(SHARER_USER_ID_HEADER, 1L))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value("Дрель"));
+                .andExpect(jsonPath("$[0].name").value("Дрель"))
+                .andExpect(jsonPath("$[0].comments[0].text").value("Хорошо работает"))
+                .andExpect(jsonPath("$[0].lastBooking.id").value(10))
+                .andExpect(jsonPath("$[0].nextBooking.id").value(11));
     }
 
     @Test

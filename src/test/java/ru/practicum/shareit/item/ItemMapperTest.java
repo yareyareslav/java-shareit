@@ -6,7 +6,6 @@ import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.mapper.ItemMapper;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 class ItemMapperTest {
 
@@ -23,6 +22,5 @@ class ItemMapperTest {
         assertEquals("Дрель", dto.getName());
         assertEquals("Описание", dto.getDescription());
         assertEquals(true, dto.getAvailable());
-        assertNull(dto.getRequest());
     }
 }
