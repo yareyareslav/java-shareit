@@ -1,5 +1,6 @@
 package ru.practicum.shareit.item;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,6 +53,10 @@ public class ItemClient extends BaseClient {
     }
 
     public ResponseEntity<Object> searchItems(String text) {
+        if (text == null || text.isBlank()) {
+            log.info("Search items skipped: blank text");
+            return ResponseEntity.ok(List.of());
+        }
         Map<String, Object> parameters = Map.of("text", text);
         return get("/search?text={text}", null, parameters);
     }

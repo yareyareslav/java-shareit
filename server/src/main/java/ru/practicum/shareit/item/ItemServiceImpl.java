@@ -119,10 +119,6 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public List<ItemDto> searchItems(String text) {
-        if (text == null || text.isBlank()) {
-            log.info("Search items skipped: blank text");
-            return List.of();
-        }
         List<ItemDto> items = itemRepository.findAllByAvailableAndText(text).stream()
                 .map(ItemMapper::toItemDto)
                 .toList();

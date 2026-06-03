@@ -29,7 +29,6 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -147,14 +146,6 @@ class ItemServiceTest {
     }
 
     @Test
-    @DisplayName("Search items with blank text")
-    void searchItems_blankText_returnEmptyList() {
-        List<ItemDto> items = itemService.searchItems("   ");
-
-        assertTrue(items.isEmpty());
-    }
-
-    @Test
     @DisplayName("Search items by text")
     void searchItems_matchingText_returnItems() {
         Item item = ItemConstantsTest.createItem(1L, "Дрель", "Описание", true, ItemConstantsTest.OWNER);
@@ -163,14 +154,6 @@ class ItemServiceTest {
         List<ItemDto> items = itemService.searchItems(ItemConstantsTest.SEARCH_TEXT);
 
         assertEquals(1, items.size());
-    }
-
-    @Test
-    @DisplayName("Search items with null text")
-    void searchItems_nullText_returnEmptyList() {
-        List<ItemDto> items = itemService.searchItems(null);
-
-        assertTrue(items.isEmpty());
     }
 
     @Test
