@@ -4,9 +4,13 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import ru.practicum.shareit.item.Item;
+import ru.practicum.shareit.item.dto.ResponseToItemRequestDto;
 import ru.practicum.shareit.user.User;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * TODO Sprint add-item-requests.
@@ -25,9 +29,13 @@ public class ItemRequest {
     private String description;
 
     @OneToOne
-    @JoinColumn(name = "requestor_id")
-    private User requestor;
+    @JoinColumn(name = "requester_id")
+    private User requester;
 
     @Column(name = "created", nullable = false)
     private LocalDateTime created;
+
+    @OneToMany
+    @JoinColumn(name = "response_ids")
+    private List<Item> responses = new ArrayList<>();
 }
