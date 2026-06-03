@@ -12,6 +12,8 @@ import ru.practicum.shareit.item.dto.ResponseCommentDto;
 import ru.practicum.shareit.item.dto.ResponseItemDto;
 import ru.practicum.shareit.item.mapper.CommentMapper;
 import ru.practicum.shareit.item.mapper.ItemMapper;
+import ru.practicum.shareit.request.ItemRequest;
+import ru.practicum.shareit.request.ItemRequestRepository;
 import ru.practicum.shareit.shared.error.BadRequestException;
 import ru.practicum.shareit.shared.error.ForbiddenException;
 import ru.practicum.shareit.shared.error.NotFoundException;
@@ -31,6 +33,7 @@ public class ItemServiceImpl implements ItemService {
     private final UserRepository userRepository;
     private final CommentRepository commentRepository;
     private final BookingRepository bookingRepository;
+    private final ItemRequestRepository itemRequestRepository;
 
     @Override
     public List<ResponseItemDto> getItemsByOwner(Long ownerId) {
@@ -78,10 +81,14 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public ItemDto createItem(Long ownerId, ItemDto itemDto) {
         User owner = getUserByIdOrThrow(ownerId);
+        ItemRequest itemRequest = null;
+        if (itemDto.getRequest() != null) {
+            itemRequest = getItemRequestByIdOrThrowNotFound(itemDto.getRequest());
+        }
         Item item = ItemMapper.toItem(
                 itemDto,
                 owner,
-                null
+                itemRequest
         );
         Item saved = itemRepository.save(item);
         log.info("Created item id={} for ownerId={}", saved.getId(), ownerId);
@@ -170,6 +177,15 @@ public class ItemServiceImpl implements ItemService {
                 .orElseThrow(() -> {
                     log.warn("Item not found: id={}", itemId);
                     return new NotFoundException("Вещь с id=" + itemId + " не найдена");
+                });
+    }
+
+    private ItemRequest getItemRequestByIdOrThrowNotFound(long requestId) {
+        return itemRequestRepository
+                .findById(requestId)
+                .orElseThrow(() -> {
+                    log.warn("ItemRequest not found: id={}", requestId);
+                    return new NotFoundException("Запрос с id=" + requestId + " не найден");
                 });
     }
 

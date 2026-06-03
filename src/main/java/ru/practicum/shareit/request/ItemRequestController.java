@@ -31,7 +31,7 @@ public class ItemRequestController {
 
     @PostMapping
     public ResponseItemRequestDto addRequest(@RequestHeader(value = Headers.USER_ID) Long userId,
-                                             @Validated({ OnCreate.class }) ItemRequestDto itemRequestDto) {
+                                             @Validated({ OnCreate.class }) @RequestBody ItemRequestDto itemRequestDto) {
         return itemRequestService.addRequest(userId, itemRequestDto);
     }
 }
