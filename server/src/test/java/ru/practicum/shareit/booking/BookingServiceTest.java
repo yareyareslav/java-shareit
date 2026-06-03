@@ -6,6 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.ResponseBookingDto;
 import ru.practicum.shareit.item.Item;
 import ru.practicum.shareit.item.ItemConstantsTest;
@@ -328,6 +329,138 @@ class BookingServiceTest {
     assertThrows(NotFoundException.class,
         () -> bookingService.updateStatus(
             ItemConstantsTest.OWNER.getId(), BookingConstantsTest.NON_EXISTING_BOOKING_ID, true));
+    verify(bookingRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("getBookings uses rejected query for REJECTED state")
+  void getBookings_rejectedState_callRejectedRepositoryMethod() {
+    when(userRepository.findById(BookingConstantsTest.BOOKER.getId()))
+        .thenReturn(Optional.of(BookingConstantsTest.BOOKER));
+    when(bookingRepository.findAllByBookerIdAndStatus(
+        BookingConstantsTest.BOOKER.getId(), BookingStatus.REJECTED))
+        .thenReturn(List.of());
+
+    bookingService.getBookings(BookingConstantsTest.BOOKER.getId(), BookingState.REJECTED);
+
+    verify(bookingRepository).findAllByBookerIdAndStatus(
+        BookingConstantsTest.BOOKER.getId(), BookingStatus.REJECTED);
+  }
+
+  @Test
+  @DisplayName("getBookingsOfItemsOwnedByUser uses current query for CURRENT state")
+  void getBookingsOfItemsOwnedByUser_currentState_callCurrentRepositoryMethod() {
+    when(userRepository.findById(ItemConstantsTest.OWNER.getId()))
+        .thenReturn(Optional.of(ItemConstantsTest.OWNER));
+    when(bookingRepository.findAllByItemOwnerIdAndInCurrentPeriod(ItemConstantsTest.OWNER.getId()))
+        .thenReturn(List.of());
+
+    bookingService.getBookingsOfItemsOwnedByUser(ItemConstantsTest.OWNER.getId(), BookingState.CURRENT);
+
+    verify(bookingRepository).findAllByItemOwnerIdAndInCurrentPeriod(ItemConstantsTest.OWNER.getId());
+  }
+
+  @Test
+  @DisplayName("getBookingsOfItemsOwnedByUser uses future query for FUTURE state")
+  void getBookingsOfItemsOwnedByUser_futureState_callFutureRepositoryMethod() {
+    when(userRepository.findById(ItemConstantsTest.OWNER.getId()))
+        .thenReturn(Optional.of(ItemConstantsTest.OWNER));
+    when(bookingRepository.findAllByItemOwnerIdAndInFuture(ItemConstantsTest.OWNER.getId()))
+        .thenReturn(List.of());
+
+    bookingService.getBookingsOfItemsOwnedByUser(ItemConstantsTest.OWNER.getId(), BookingState.FUTURE);
+
+    verify(bookingRepository).findAllByItemOwnerIdAndInFuture(ItemConstantsTest.OWNER.getId());
+  }
+
+  @Test
+  @DisplayName("getBookingsOfItemsOwnedByUser uses waiting query for WAITING state")
+  void getBookingsOfItemsOwnedByUser_waitingState_callWaitingRepositoryMethod() {
+    when(userRepository.findById(ItemConstantsTest.OWNER.getId()))
+        .thenReturn(Optional.of(ItemConstantsTest.OWNER));
+    when(bookingRepository.findAllByItemOwnerIdAndStatus(ItemConstantsTest.OWNER.getId(), BookingStatus.WAITING))
+        .thenReturn(List.of());
+
+    bookingService.getBookingsOfItemsOwnedByUser(ItemConstantsTest.OWNER.getId(), BookingState.WAITING);
+
+    verify(bookingRepository).findAllByItemOwnerIdAndStatus(
+        ItemConstantsTest.OWNER.getId(), BookingStatus.WAITING);
+  }
+
+  @Test
+  @DisplayName("getBookingsOfItemsOwnedByUser uses rejected query for REJECTED state")
+  void getBookingsOfItemsOwnedByUser_rejectedState_callRejectedRepositoryMethod() {
+    when(userRepository.findById(ItemConstantsTest.OWNER.getId()))
+        .thenReturn(Optional.of(ItemConstantsTest.OWNER));
+    when(bookingRepository.findAllByItemOwnerIdAndStatus(ItemConstantsTest.OWNER.getId(), BookingStatus.REJECTED))
+        .thenReturn(List.of());
+
+    bookingService.getBookingsOfItemsOwnedByUser(ItemConstantsTest.OWNER.getId(), BookingState.REJECTED);
+
+    verify(bookingRepository).findAllByItemOwnerIdAndStatus(
+        ItemConstantsTest.OWNER.getId(), BookingStatus.REJECTED);
+  }
+
+  @Test
+  @DisplayName("create throws when booker is item owner")
+  void create_bookerIsOwner_throwBadRequestException() {
+    Item item = ItemConstantsTest.createItem(
+        BookingConstantsTest.DEFAULT_ITEM_ID, "Дрель", "Описание", true, ItemConstantsTest.OWNER);
+    when(userRepository.findById(ItemConstantsTest.OWNER.getId()))
+        .thenReturn(Optional.of(ItemConstantsTest.OWNER));
+    when(itemRepository.findById(BookingConstantsTest.DEFAULT_ITEM_ID)).thenReturn(Optional.of(item));
+
+    assertThrows(BadRequestException.class,
+        () -> bookingService.create(ItemConstantsTest.OWNER.getId(), BookingConstantsTest.VALID_BOOKING_DTO));
+    verify(bookingRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("create throws when end is not after start")
+  void create_invalidDates_throwBadRequestException() {
+    Item item = defaultItem();
+    BookingDto invalidDto = new BookingDto(
+        null,
+        BookingConstantsTest.FUTURE_END,
+        BookingConstantsTest.FUTURE_START,
+        BookingConstantsTest.DEFAULT_ITEM_ID,
+        null,
+        null
+    );
+    when(userRepository.findById(BookingConstantsTest.BOOKER.getId()))
+        .thenReturn(Optional.of(BookingConstantsTest.BOOKER));
+    when(itemRepository.findById(BookingConstantsTest.DEFAULT_ITEM_ID)).thenReturn(Optional.of(item));
+
+    assertThrows(BadRequestException.class,
+        () -> bookingService.create(BookingConstantsTest.BOOKER.getId(), invalidDto));
+    verify(bookingRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("updateStatus throws when booking is not waiting")
+  void updateStatus_notWaiting_throwForbiddenException() {
+    Item item = defaultItem();
+    Booking booking = BookingConstantsTest.createLastApprovedBooking(item);
+    when(bookingRepository.findById(booking.getId())).thenReturn(Optional.of(booking));
+    when(userRepository.findById(ItemConstantsTest.OWNER.getId()))
+        .thenReturn(Optional.of(ItemConstantsTest.OWNER));
+
+    assertThrows(ForbiddenException.class,
+        () -> bookingService.updateStatus(ItemConstantsTest.OWNER.getId(), booking.getId(), true));
+    verify(bookingRepository, never()).save(any());
+  }
+
+  @Test
+  @DisplayName("updateStatus throws when user is not item owner")
+  void updateStatus_notOwner_throwForbiddenException() {
+    Item item = defaultItem();
+    Booking booking = waitingBooking(item);
+    when(bookingRepository.findById(booking.getId())).thenReturn(Optional.of(booking));
+    when(userRepository.findById(BookingConstantsTest.BOOKER.getId()))
+        .thenReturn(Optional.of(BookingConstantsTest.BOOKER));
+
+    assertThrows(ForbiddenException.class,
+        () -> bookingService.updateStatus(BookingConstantsTest.BOOKER.getId(), booking.getId(), true));
     verify(bookingRepository, never()).save(any());
   }
 

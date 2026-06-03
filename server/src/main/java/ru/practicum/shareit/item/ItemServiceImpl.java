@@ -21,7 +21,7 @@ import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserRepository;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -200,7 +200,7 @@ public class ItemServiceImpl implements ItemService {
         HashMap<Long, List<Booking>> bookingsByItems = new HashMap<>();
         for (Booking b : bookings) {
             Long itemId = b.getItem().getId();
-            bookingsByItems.getOrDefault(itemId, Collections.emptyList()).add(b);
+            bookingsByItems.computeIfAbsent(itemId, id -> new ArrayList<>()).add(b);
         }
         return bookingsByItems;
     }

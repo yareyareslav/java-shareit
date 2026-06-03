@@ -6,14 +6,24 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import ru.practicum.shareit.booking.Booking;
+import ru.practicum.shareit.booking.BookingConstantsTest;
 import ru.practicum.shareit.booking.BookingRepository;
+import ru.practicum.shareit.booking.BookingStatus;
+import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.item.dto.ResponseCommentDto;
 import ru.practicum.shareit.item.dto.ResponseItemDto;
+import ru.practicum.shareit.request.ItemRequest;
+import ru.practicum.shareit.request.ItemRequestConstantsTest;
+import ru.practicum.shareit.request.ItemRequestRepository;
+import ru.practicum.shareit.shared.error.BadRequestException;
 import ru.practicum.shareit.shared.error.ForbiddenException;
 import ru.practicum.shareit.shared.error.NotFoundException;
 import ru.practicum.shareit.user.UserConstantsTest;
 import ru.practicum.shareit.user.UserRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -39,6 +49,9 @@ class ItemServiceTest {
 
     @Mock
     BookingRepository bookingRepository;
+
+    @Mock
+    ItemRequestRepository itemRequestRepository;
 
     @InjectMocks
     ItemServiceImpl itemService;
@@ -150,5 +163,126 @@ class ItemServiceTest {
         List<ItemDto> items = itemService.searchItems(ItemConstantsTest.SEARCH_TEXT);
 
         assertEquals(1, items.size());
+    }
+
+    @Test
+    @DisplayName("Search items with null text")
+    void searchItems_nullText_returnEmptyList() {
+        List<ItemDto> items = itemService.searchItems(null);
+
+        assertTrue(items.isEmpty());
+    }
+
+    @Test
+    @DisplayName("Get items by owner with bookings")
+    void getItemsByOwner_withBookings_returnItemsWithLastAndNextBooking() {
+        Item item = ItemConstantsTest.createItem(1L, "Дрель", "Описание", true, ItemConstantsTest.OWNER);
+        Booking lastBooking = BookingConstantsTest.createLastApprovedBooking(item);
+        Booking nextBooking = BookingConstantsTest.createNextApprovedBooking(item);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(ItemConstantsTest.OWNER));
+        when(itemRepository.findAllWithFetchedComments(1L)).thenReturn(List.of(item));
+        when(bookingRepository.findAllByItemIdsAndStatusApproved(List.of(1L)))
+                .thenReturn(List.of(lastBooking, nextBooking));
+
+        List<ResponseItemDto> items = itemService.getItemsByOwner(1L);
+
+        assertEquals(1, items.size());
+        assertEquals(BookingConstantsTest.LAST_BOOKING_ID, items.getFirst().getLastBooking().getId());
+        assertEquals(BookingConstantsTest.NEXT_BOOKING_ID, items.getFirst().getNextBooking().getId());
+    }
+
+    @Test
+    @DisplayName("Create item linked to item request")
+    void createItem_withItemRequest_returnItemDto() {
+        ItemRequest request = ItemRequestConstantsTest.defaultRequest();
+        ItemDto dto = new ItemDto(null, "Дрель", "Описание", true, null, ItemRequestConstantsTest.DEFAULT_REQUEST_ID);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(ItemConstantsTest.OWNER));
+        when(itemRequestRepository.findById(ItemRequestConstantsTest.DEFAULT_REQUEST_ID))
+                .thenReturn(Optional.of(request));
+        when(itemRepository.save(any(Item.class))).thenAnswer(invocation -> {
+            Item item = invocation.getArgument(0);
+            item.setId(10L);
+            return item;
+        });
+
+        ItemDto result = itemService.createItem(1L, dto);
+
+        assertEquals(10L, result.getId());
+        assertEquals(ItemRequestConstantsTest.DEFAULT_REQUEST_ID, result.getRequest());
+    }
+
+    @Test
+    @DisplayName("Create item with non-existing item request")
+    void createItem_nonExistingItemRequest_throwNotFoundException() {
+        ItemDto dto = new ItemDto(null, "Дрель", "Описание", true, null, 999L);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(ItemConstantsTest.OWNER));
+        when(itemRequestRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> itemService.createItem(1L, dto));
+    }
+
+    @Test
+    @DisplayName("Create comment after completed booking")
+    void createComment_completedBooking_returnComment() {
+        Item item = ItemConstantsTest.createItem(1L, "Дрель", "Описание", true, ItemConstantsTest.OWNER);
+        Booking booking = BookingConstantsTest.createLastApprovedBooking(item);
+        CommentDto commentDto = new CommentDto(null, null, "Отличная вещь");
+        when(userRepository.findById(BookingConstantsTest.BOOKER.getId()))
+                .thenReturn(Optional.of(BookingConstantsTest.BOOKER));
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
+        when(bookingRepository.findByItemIdAndBookerId(1L, BookingConstantsTest.BOOKER.getId()))
+                .thenReturn(booking);
+        when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> {
+            Comment comment = invocation.getArgument(0);
+            comment.setId(5L);
+            return comment;
+        });
+
+        ResponseCommentDto result = itemService.createComment(
+                BookingConstantsTest.BOOKER.getId(), 1L, commentDto);
+
+        assertEquals(5L, result.getId());
+        assertEquals("Отличная вещь", result.getText());
+        verify(commentRepository).save(any(Comment.class));
+    }
+
+    @Test
+    @DisplayName("Create comment without booking")
+    void createComment_noBooking_throwBadRequestException() {
+        Item item = ItemConstantsTest.createItem(1L, "Дрель", "Описание", true, ItemConstantsTest.OWNER);
+        when(userRepository.findById(BookingConstantsTest.BOOKER.getId()))
+                .thenReturn(Optional.of(BookingConstantsTest.BOOKER));
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
+        when(bookingRepository.findByItemIdAndBookerId(1L, BookingConstantsTest.BOOKER.getId()))
+                .thenReturn(null);
+
+        assertThrows(BadRequestException.class,
+                () -> itemService.createComment(
+                        BookingConstantsTest.BOOKER.getId(), 1L, new CommentDto(null, null, "text")));
+        verify(commentRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Create comment during active approved booking")
+    void createComment_activeApprovedBooking_throwBadRequestException() {
+        Item item = ItemConstantsTest.createItem(1L, "Дрель", "Описание", true, ItemConstantsTest.OWNER);
+        Booking booking = BookingConstantsTest.createBooking(
+                9L,
+                LocalDateTime.now().minusHours(1),
+                LocalDateTime.now().plusHours(1),
+                item,
+                BookingConstantsTest.BOOKER,
+                BookingStatus.APPROVED
+        );
+        when(userRepository.findById(BookingConstantsTest.BOOKER.getId()))
+                .thenReturn(Optional.of(BookingConstantsTest.BOOKER));
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
+        when(bookingRepository.findByItemIdAndBookerId(1L, BookingConstantsTest.BOOKER.getId()))
+                .thenReturn(booking);
+
+        assertThrows(BadRequestException.class,
+                () -> itemService.createComment(
+                        BookingConstantsTest.BOOKER.getId(), 1L, new CommentDto(null, null, "text")));
+        verify(commentRepository, never()).save(any());
     }
 }

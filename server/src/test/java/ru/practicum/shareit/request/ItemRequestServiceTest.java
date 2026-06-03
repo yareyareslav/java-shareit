@@ -6,6 +6,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import ru.practicum.shareit.item.Item;
+import ru.practicum.shareit.item.ItemConstantsTest;
 import ru.practicum.shareit.item.ItemRepository;
 import ru.practicum.shareit.request.dto.ItemRequestDto;
 import ru.practicum.shareit.request.dto.ResponseItemRequestDto;
@@ -180,5 +182,26 @@ class ItemRequestServiceTest {
                         UserConstantsTest.NON_EXISTING_USER_ID,
                         ItemRequestConstantsTest.VALID_ITEM_REQUEST_DTO));
         verify(itemRequestRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("getOwnRequests returns requests with linked items")
+    void getOwnRequests_withLinkedItems_returnRequestsWithItems() {
+        ItemRequest request = ItemRequestConstantsTest.defaultRequest();
+        Item item = ItemConstantsTest.createItem(1L, "Дрель", "Описание", true, ItemConstantsTest.OWNER);
+        item.setRequest(request);
+        when(userRepository.findById(ItemRequestConstantsTest.REQUESTER.getId()))
+                .thenReturn(Optional.of(ItemRequestConstantsTest.REQUESTER));
+        when(itemRequestRepository.findAllByRequesterId(ItemRequestConstantsTest.REQUESTER.getId()))
+                .thenReturn(List.of(request));
+        when(itemRepository.findAllByRequestIds(List.of(ItemRequestConstantsTest.DEFAULT_REQUEST_ID)))
+                .thenReturn(List.of(item));
+
+        List<ResponseItemRequestDto> result = itemRequestService.getOwnRequests(
+                ItemRequestConstantsTest.REQUESTER.getId());
+
+        assertEquals(1, result.size());
+        assertEquals(1, result.getFirst().getItems().size());
+        assertEquals("Дрель", result.getFirst().getItems().getFirst().getName());
     }
 }

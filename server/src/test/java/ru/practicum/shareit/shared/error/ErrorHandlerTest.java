@@ -14,7 +14,9 @@ import ru.practicum.shareit.user.dto.UserDto;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -52,6 +54,16 @@ class ErrorHandlerTest {
                         .content("{\"name\":\"User\",\"email\":\"user@gmail.com\"}"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error").value("Email уже занят"));
+    }
+
+    @Test
+    @DisplayName("Handle ForbiddenException")
+    void handleForbiddenException_return403() throws Exception {
+        doThrow(new ForbiddenException("Нет доступа")).when(userService).deleteUser(1L);
+
+        mockMvc.perform(delete("/users/1"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("Нет доступа"));
     }
 
     @Test

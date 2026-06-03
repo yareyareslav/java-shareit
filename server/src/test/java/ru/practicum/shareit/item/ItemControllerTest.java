@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.practicum.shareit.booking.dto.BookingDto;
+import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ResponseCommentDto;
 import ru.practicum.shareit.item.dto.ResponseItemDto;
 import ru.practicum.shareit.item.dto.ItemDto;
@@ -160,6 +161,20 @@ class ItemControllerTest {
         mockMvc.perform(get("/items/search").param("text", "дрел"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].name").value("Дрель"));
+    }
+
+    @Test
+    @DisplayName("POST /items/{id}/comment creates comment")
+    void createComment_returnOk() throws Exception {
+        ResponseCommentDto comment = new ResponseCommentDto(1L, "Author", "Отлично", Instant.now());
+        when(itemService.createComment(eq(1L), eq(1L), any(CommentDto.class))).thenReturn(comment);
+
+        mockMvc.perform(post("/items/1/comment")
+                        .header(SHARER_USER_ID_HEADER, 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"text\":\"Отлично\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.text").value("Отлично"));
     }
 
     @Test
