@@ -8,8 +8,8 @@
 
 - API: `http://localhost:8080`
 - H2 Console: `http://localhost:8080/h2-console`
-  - JDBC URL: `jdbc:h2:mem:shareit`
-  - User: `sa`, Password: *(пусто)*
+    - JDBC URL: `jdbc:h2:mem:shareit`
+    - User: `sa`, Password: _(пусто)_
 
 Заголовок для запросов: `X-Sharer-User-Id: 1`
 
