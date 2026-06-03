@@ -12,9 +12,8 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ResponseItemRequestDto {
+    private Long id;
     private String description;
-
     private LocalDateTime created;
-
-    List<ResponseToItemRequestDto> responses;
+    private List<ResponseToItemRequestDto> items;
 }

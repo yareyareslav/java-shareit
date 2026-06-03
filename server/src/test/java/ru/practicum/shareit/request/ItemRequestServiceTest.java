@@ -6,6 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import ru.practicum.shareit.item.ItemRepository;
 import ru.practicum.shareit.request.dto.ItemRequestDto;
 import ru.practicum.shareit.request.dto.ResponseItemRequestDto;
 import ru.practicum.shareit.shared.error.NotFoundException;
@@ -19,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyIterable;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -33,6 +35,9 @@ class ItemRequestServiceTest {
     @Mock
     UserRepository userRepository;
 
+    @Mock
+    ItemRepository itemRepository;
+
     @InjectMocks
     ItemRequestServiceImpl itemRequestService;
 
@@ -44,6 +49,7 @@ class ItemRequestServiceTest {
                 .thenReturn(Optional.of(ItemRequestConstantsTest.REQUESTER));
         when(itemRequestRepository.findAllByRequesterId(ItemRequestConstantsTest.REQUESTER.getId()))
                 .thenReturn(List.of(request));
+        when(itemRepository.findAllByRequestIds(anyIterable())).thenReturn(List.of());
 
         List<ResponseItemRequestDto> result = itemRequestService.getOwnRequests(
                 ItemRequestConstantsTest.REQUESTER.getId());
@@ -86,6 +92,7 @@ class ItemRequestServiceTest {
                 .thenReturn(Optional.of(ItemRequestConstantsTest.REQUESTER));
         when(itemRequestRepository.findAllRequestsOfOthers(ItemRequestConstantsTest.REQUESTER.getId()))
                 .thenReturn(List.of(request));
+        when(itemRepository.findAllByRequestIds(anyIterable())).thenReturn(List.of());
 
         List<ResponseItemRequestDto> result = itemRequestService.getOthersRequests(
                 ItemRequestConstantsTest.REQUESTER.getId());
@@ -125,6 +132,8 @@ class ItemRequestServiceTest {
         ItemRequest request = ItemRequestConstantsTest.defaultRequest();
         when(itemRequestRepository.findById(ItemRequestConstantsTest.DEFAULT_REQUEST_ID))
                 .thenReturn(Optional.of(request));
+        when(itemRepository.findAllByRequestId(ItemRequestConstantsTest.DEFAULT_REQUEST_ID))
+                .thenReturn(List.of());
 
         ResponseItemRequestDto result = itemRequestService.getRequestById(
                 ItemRequestConstantsTest.DEFAULT_REQUEST_ID);
@@ -155,6 +164,7 @@ class ItemRequestServiceTest {
         ResponseItemRequestDto result = itemRequestService.addRequest(
                 ItemRequestConstantsTest.REQUESTER.getId(), requestDto);
 
+        assertEquals(1, result.getId());
         assertEquals(ItemRequestConstantsTest.REQUEST_DESCRIPTION, result.getDescription());
         assertEquals(ItemRequestConstantsTest.REQUEST_CREATED, result.getCreated());
         verify(itemRequestRepository).save(any(ItemRequest.class));

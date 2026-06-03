@@ -132,6 +132,7 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public ResponseCommentDto createComment(Long authorId, Long itemId, CommentDto commentDto) {
+        LocalDateTime now = LocalDateTime.now();
         User author = getUserByIdOrThrow(authorId);
         Item item = getItemByIdOrThrow(itemId);
         Booking booking = bookingRepository.findByItemIdAndBookerId(itemId, authorId);
@@ -141,9 +142,12 @@ public class ItemServiceImpl implements ItemService {
             throw new BadRequestException("Пользователь не бронировал эту вещь");
         }
 
-        if (booking.getStatus() == BookingStatus.APPROVED && booking.getEnd().isAfter(LocalDateTime.now())) {
-            log.warn("Comment denied: active approved booking id={} for authorId={}, itemId={}",
-                    booking.getId(), authorId, itemId);
+        if (
+                booking.getStatus() == BookingStatus.APPROVED
+                && booking.getEnd().isAfter(now)
+        ) {
+            log.warn("Comment denied: active approved booking id={} for authorId={}, itemId={}. Now={}, end={}",
+                    booking.getId(), authorId, itemId, now, booking.getEnd());
             throw new BadRequestException("Нельзя комментировать при одобренном букинге, который еще не завершен.");
         }
 

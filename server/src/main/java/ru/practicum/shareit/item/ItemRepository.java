@@ -10,6 +10,15 @@ import java.util.Optional;
 public interface ItemRepository extends JpaRepository<Item, Long> {
     List<Item> findAllByOwnerId(Long ownerId);
 
+    List<Item> findAllByRequestId(Long requestId);
+
+    @Query("""
+            SELECT i
+            FROM Item i
+            WHERE i.request.id in :request_ids
+            """)
+    List<Item> findAllByRequestIds(@Param("request_ids") Iterable<Long> requestIds);
+
     @Query("""
             SELECT i
             FROM Item i

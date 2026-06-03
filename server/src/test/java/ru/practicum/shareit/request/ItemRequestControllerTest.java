@@ -118,16 +118,19 @@ class ItemRequestControllerTest {
     }
 
     @Test
-    @DisplayName("POST /requests with invalid body returns 400")
-    void addRequest_invalidBody_returnBadRequest() throws Exception {
+    @DisplayName("POST /requests with invalid body delegates to service without controller validation")
+    void addRequest_invalidBody_delegatesToService() throws Exception {
         ItemRequestDto invalidDto = new ItemRequestDto(null, "   ");
+        when(itemRequestService.addRequest(eq(ItemRequestConstantsTest.REQUESTER.getId()), any(ItemRequestDto.class)))
+                .thenReturn(sampleResponse());
 
         mockMvc.perform(post("/requests")
                         .header(Headers.USER_ID, ItemRequestConstantsTest.REQUESTER.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidDto)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").exists());
+                .andExpect(status().isOk());
+
+        verify(itemRequestService).addRequest(eq(ItemRequestConstantsTest.REQUESTER.getId()), any(ItemRequestDto.class));
     }
 
     @Test
@@ -155,6 +158,7 @@ class ItemRequestControllerTest {
 
     private ResponseItemRequestDto sampleResponse() {
         return new ResponseItemRequestDto(
+                ItemRequestConstantsTest.DEFAULT_REQUEST_ID,
                 ItemRequestConstantsTest.REQUEST_DESCRIPTION,
                 ItemRequestConstantsTest.REQUEST_CREATED,
                 List.of()
@@ -163,6 +167,7 @@ class ItemRequestControllerTest {
 
     private ResponseItemRequestDto otherUserResponse() {
         return new ResponseItemRequestDto(
+                2L,
                 ItemRequestConstantsTest.OTHER_REQUEST_DESCRIPTION,
                 ItemRequestConstantsTest.REQUEST_CREATED.plusHours(1),
                 List.of()

@@ -88,15 +88,18 @@ class UserControllerTest {
     }
 
     @Test
-    @DisplayName("POST /users with invalid email returns 400")
-    void createUser_invalidEmail_returnBadRequest() throws Exception {
+    @DisplayName("POST /users with invalid email delegates to service without controller validation")
+    void createUser_invalidEmail_delegatesToService() throws Exception {
         UserDto invalidUser = new UserDto(null, "User", "not-an-email");
+        when(userService.createUser(any(UserDto.class)))
+                .thenReturn(new UserDto(1L, "User", "not-an-email"));
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidUser)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").exists());
+                .andExpect(status().isCreated());
+
+        verify(userService).createUser(any(UserDto.class));
     }
 
     @Test

@@ -6,7 +6,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import ru.practicum.shareit.shared.dto.group.OnCreate;
 import ru.practicum.shareit.shared.dto.group.OnUpdate;
-import ru.practicum.shareit.user.User;
 
 /**
  * TODO Sprint add-item-requests.

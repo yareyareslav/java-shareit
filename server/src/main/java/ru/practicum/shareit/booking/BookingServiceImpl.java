@@ -91,6 +91,16 @@ public class BookingServiceImpl implements BookingService {
             throw new BadRequestException("Предмет с id=" + item.getId() + " недоступен для бронирования");
         }
 
+        if (item.getOwner().getId().equals(requestorId)) {
+            log.warn("Booking denied: bookerId={} is owner of item id={}", requestorId, item.getId());
+            throw new BadRequestException("Нельзя забронировать собственную вещь");
+        }
+
+        if (bookingDto.getStart() == null || bookingDto.getEnd() == null
+                || !bookingDto.getEnd().isAfter(bookingDto.getStart())) {
+            throw new BadRequestException("Время окончания должно быть позже времени начала");
+        }
+
         bookingDto.setStatus(BookingStatus.WAITING);
 
         Booking booking = BookingMapper.toData(bookingDto, item, user);
@@ -107,6 +117,12 @@ public class BookingServiceImpl implements BookingService {
 
         if (!booking.getStatus().equals(BookingStatus.WAITING)) {
             throw new ForbiddenException("Заявка с id=" + bookingId + " не находится в статусе ожидания.");
+        }
+
+        if (!booking.getItem().getOwner().getId().equals(userId)) {
+            log.warn("Booking status update denied: userId={} is not owner of item id={}",
+                    userId, booking.getItem().getId());
+            throw new ForbiddenException("Подтвердить бронирование может только владелец вещи");
         }
 
         BookingStatus status = approved ? BookingStatus.APPROVED : BookingStatus.REJECTED;

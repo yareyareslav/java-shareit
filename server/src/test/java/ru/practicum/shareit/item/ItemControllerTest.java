@@ -19,10 +19,12 @@ import ru.practicum.shareit.shared.error.NotFoundException;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -60,16 +62,19 @@ class ItemControllerTest {
     }
 
     @Test
-    @DisplayName("POST /items without required fields returns 400")
-    void createItem_invalidBody_returnBadRequest() throws Exception {
+    @DisplayName("POST /items without required fields delegates to service without controller validation")
+    void createItem_invalidBody_delegatesToService() throws Exception {
         ItemDto invalidDto = new ItemDto(null, "", "", null, null, null);
+        when(itemService.createItem(eq(1L), any(ItemDto.class)))
+                .thenReturn(new ItemDto(1L, "", "", null, null, null));
 
         mockMvc.perform(post("/items")
                         .header(SHARER_USER_ID_HEADER, 1L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidDto)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").exists());
+                .andExpect(status().isCreated());
+
+        verify(itemService).createItem(eq(1L), any(ItemDto.class));
     }
 
     @Test

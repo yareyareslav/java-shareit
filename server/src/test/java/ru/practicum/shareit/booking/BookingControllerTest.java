@@ -141,16 +141,18 @@ class BookingControllerTest {
     }
 
     @Test
-    @DisplayName("POST /bookings with invalid body returns 400")
-    void createBooking_invalidBody_returnBadRequest() throws Exception {
+    @DisplayName("POST /bookings with invalid body delegates to service without controller validation")
+    void createBooking_invalidBody_delegatesToService() throws Exception {
         BookingDto invalidDto = new BookingDto(null, null, null, null, null, null);
+        when(bookingService.create(eq(2L), any(BookingDto.class))).thenReturn(sampleResponseBooking());
 
         mockMvc.perform(post("/bookings")
                         .header(Headers.USER_ID, 2L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidDto)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").exists());
+                .andExpect(status().isOk());
+
+        verify(bookingService).create(eq(2L), any(BookingDto.class));
     }
 
     @Test

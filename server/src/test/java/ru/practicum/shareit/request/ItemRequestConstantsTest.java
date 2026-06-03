@@ -5,7 +5,6 @@ import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserConstantsTest;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 
 public class ItemRequestConstantsTest {
     public static final Long DEFAULT_REQUEST_ID = 1L;
@@ -30,8 +29,7 @@ public class ItemRequestConstantsTest {
                 id,
                 description,
                 requester,
-                created,
-                new ArrayList<>()
+                created
         );
     }
 

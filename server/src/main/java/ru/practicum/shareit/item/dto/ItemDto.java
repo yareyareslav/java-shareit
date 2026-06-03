@@ -1,5 +1,7 @@
 package ru.practicum.shareit.item.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -24,5 +26,6 @@ public class ItemDto {
     @NotNull(groups = {OnCreate.class})
     private Boolean available;
     private Long owner;
+    @JsonProperty("requestId")
     private Long request;
 }

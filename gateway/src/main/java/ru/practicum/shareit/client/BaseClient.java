@@ -3,6 +3,7 @@ package ru.practicum.shareit.client;
 import java.util.List;
 import java.util.Map;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -12,6 +13,9 @@ import org.springframework.lang.Nullable;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
+import ru.practicum.shareit.shared.constant.Headers;
+
+@Slf4j
 public class BaseClient {
     protected final RestTemplate rest;
 
@@ -80,6 +84,9 @@ public class BaseClient {
     }
 
     private <T> ResponseEntity<Object> makeAndSendRequest(HttpMethod method, String path, Long userId, @Nullable Map<String, Object> parameters, @Nullable T body) {
+        log.debug("[{}] -> {} {} userId={} params={}",
+                getClass().getSimpleName(), method, path, userId, parameters);
+
         HttpEntity<T> requestEntity = new HttpEntity<>(body, defaultHeaders(userId));
 
         ResponseEntity<Object> shareitServerResponse;
@@ -90,8 +97,18 @@ public class BaseClient {
                 shareitServerResponse = rest.exchange(path, method, requestEntity, Object.class);
             }
         } catch (HttpStatusCodeException e) {
-            return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsByteArray());
+            log.warn("[{}] <- {} {} userId={} status={} body={}",
+                    getClass().getSimpleName(), method, path, userId,
+                    e.getStatusCode(), e.getResponseBodyAsString());
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            return ResponseEntity.status(e.getStatusCode())
+                    .headers(headers)
+                    .body(e.getResponseBodyAsString());
         }
+
+        log.debug("[{}] <- {} {} userId={} status={}",
+                getClass().getSimpleName(), method, path, userId, shareitServerResponse.getStatusCode());
         return prepareGatewayResponse(shareitServerResponse);
     }
 
@@ -100,15 +117,18 @@ public class BaseClient {
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setAccept(List.of(MediaType.APPLICATION_JSON));
         if (userId != null) {
-            headers.set("X-Sharer-User-Id", String.valueOf(userId));
+            headers.set(Headers.USER_ID, String.valueOf(userId));
         }
         return headers;
     }
 
-    private static ResponseEntity<Object> prepareGatewayResponse(ResponseEntity<Object> response) {
+    private ResponseEntity<Object> prepareGatewayResponse(ResponseEntity<Object> response) {
         if (response.getStatusCode().is2xxSuccessful()) {
             return response;
         }
+
+        log.warn("[{}] unexpected non-success status={}",
+                getClass().getSimpleName(), response.getStatusCode());
 
         ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.status(response.getStatusCode());
 
